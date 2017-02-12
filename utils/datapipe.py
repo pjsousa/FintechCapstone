@@ -1,0 +1,144 @@
+import datetime
+import pandas as pd
+import numpy as np
+from functools import partial
+from scipy import stats
+
+from utils.datafetch import *
+from utils.vectorized_funs import *
+
+def calc_diff_moves(raw_df, timespan, column_slice, fillna=False, merge_result=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	res_df = pd.DataFrame()
+	itr_df = pd.DataFrame()
+
+	for ts_name in timespan:
+		for t in timespan[ts_name]:
+			itr_df = timewindow_diff(raw_df, column_slice=column_slice, shift_window=t, fillna=fillna, merge_result=False)
+			res_df = pd.concat([res_df, itr_df], axis=1)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	itr_df = None
+
+	return res_df
+
+
+
+def calc_return(raw_df, timespan, column_slice, merge_result=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	res_df = pd.DataFrame()
+	itr_df = pd.DataFrame()
+
+	for ts_name in timespan:
+		for t in timespan[ts_name]:
+			itr_df = timewindow_return(raw_df, column_slice=column_slice, shift_window=t, merge_result=False)
+			res_df = pd.concat([res_df, itr_df], axis=1)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_sma(raw_df, timespan, column_slice, merge_result=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	res_df = pd.DataFrame()
+	itr_df = pd.DataFrame()
+
+	for ts_name in timespan:
+		for t in timespan[ts_name]:
+			itr_df = roll_columns(raw_df, "mean", column_slice=column_slice, window=t, merge_result=False)
+			res_df = pd.concat([res_df, itr_df], axis=1)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	itr_df = pd.DataFrame()
+	res_df = pd.DataFrame()
+
+	for col in column_slice:
+		for ts_name in timespan:
+			if ts_name in ["medium_term", "long_term"]:
+				for t in timespan[ts_name]:
+					itr_df = roll_columns(raw_df, "std", column_slice=[col], window=t, merge_result=False, scaler=scaler, pad_result=True)
+					upper_band = itr_df.apply(lambda x: raw_df[col] + x)
+					lower_band = itr_df.apply(lambda x: raw_df[col] - x)
+					
+					roll_name = "{}_roll_2std_{}".format("Close", t)
+					upper_name = "{}_bollinger_{}_up".format("Close", t)
+					lower_name = "{}_bollinger_{}_low".format("Close", t)
+					
+					res_df[roll_name] = itr_df.iloc[:, 0]
+					res_df[upper_name] = upper_band
+					res_df[lower_name] = lower_band
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
