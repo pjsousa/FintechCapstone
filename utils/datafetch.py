@@ -140,7 +140,7 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False):
 		else:
 			itr_err = False
 			_r["OK"].append(itr_tkr)
-			itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8")
+			itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8", mode="a")
 			if del_temp:
 				del itr_df
 
