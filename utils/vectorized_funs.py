@@ -197,7 +197,7 @@ def calc_beta(df):
 	##beta = covariance[0,1]/covariance[1,1]
 	return slope
 
-def timewindow_beta(stock_df, market_df, column_slice, period, min_periods=None, set_indexes=True):
+def timewindow_beta(stock_df, market_df, column_slice, period, min_periods=None, set_indexes=True, merge_result=False):
 	if min_periods is None:
 		min_periods = period
 	
@@ -225,6 +225,12 @@ def timewindow_beta(stock_df, market_df, column_slice, period, min_periods=None,
 		col_name = "timewindow_beta_{}_{}".format(period, col)
 		result[col_name] = itr_beta
 
+	if merge_result:
+		if set_indexes:
+			result = pd.merge(stock_df, result, left_on='Date', right_index=True)
+		else:
+			result = pd.concat([stock_df, result], axis=1);
+
 	return result
 
 
@@ -239,7 +245,7 @@ def calc_alpha(df):
 	##beta = covariance[0,1]/covariance[1,1]
 	return intercept
 
-def timewindow_alpha(stock_df, market_df, column_slice, period, min_periods=None, set_indexes=True):
+def timewindow_alpha(stock_df, market_df, column_slice, period, min_periods=None, set_indexes=True, merge_result=False):
 	if min_periods is None:
 		min_periods = period
 	
@@ -266,6 +272,12 @@ def timewindow_alpha(stock_df, market_df, column_slice, period, min_periods=None
 
 		col_name = "timewindow_beta_{}_{}".format(period, col)
 		result[col_name] = itr_beta
+
+	if merge_result:
+		if set_indexes:
+			result = pd.merge(stock_df, result, left_on='Date', right_index=True)
+		else:
+			result = pd.concat([stock_df, result], axis=1);
 
 	return result
 

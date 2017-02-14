@@ -142,3 +142,35 @@ def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 	return res_df
 
 
+def calc_measures_tier1(raw_df, verbose=True):
+	timespan = dict();
+
+	timespan = {
+		"short_term": [1, 2, 5]
+	    ,"medium_term": [10, 30, 40, 70, 90]
+	    ,"long_term": [100, 200, 300, 400]
+	}
+
+	raw_df = calc_sma(raw_df, timespan, ["Close", "Volume", "High", "Low", "Open"], merge_result=True);
+	
+	raw_df = calc_return(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
+
+	raw_df = calc_diff_moves(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], fillna=True, merge_result=True)
+
+	raw_df = calc_bollinger(raw_df, timespan, ["Close", "Volume"], merge_result=True, scaler=2)
+
+	sp500 = load_raw_frame("^GSPC")
+
+	for tterm in timespan:
+		for t in timespan[tterm]:
+			raw_df = timewindow_beta(raw_df, sp500, ["Close", "High", "Low"], t, merge_result=True)
+
+	for tterm in timespan:
+		for t in timespan[tterm]:
+			raw_df = timewindow_alpha(raw_df, sp500, ["Close", "High", "Low"], t, merge_result=True)
+
+	return raw_df
+
+
+
+
