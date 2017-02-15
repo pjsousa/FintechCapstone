@@ -5,6 +5,7 @@ import pandas as pd
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
 RAW_DATA_PATH = "{}/A_RAW".format(DATA_PATH)
+TIER1_DATA_PATH = "{}/B_TIER1".format(DATA_PATH)
 
 def fetch_quotes(ticker, from_date=datetime.datetime(1900, 1, 1), to_date=datetime.datetime.now(), source="yahoo"):
 	"""
@@ -184,5 +185,34 @@ def load_raw_frame(ticker, tryfetch=True):
 			_r = None
 
 	return _r
+
+
+def store_tier1_frame(tier1_df, ticker):
+	_r = None
+	try:
+		tier1_df.to_hdf("{}/{}.h5".format(TIER1_DATA_PATH, ticker), "TIER1")
+		_r = True
+	except:
+		_r = False
+
+	return _r
+
+
+def load_tier1_frame(ticker):
+	_r = None
+	try:
+		_r = pd.read_hdf("{}/{}.h5".format(TIER1_DATA_PATH, ticker), "TIER1")
+	except:
+		_r = None
+
+	return _r
+
+
+
+
+
+
+
+
 
 

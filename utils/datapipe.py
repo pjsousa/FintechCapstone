@@ -7,7 +7,7 @@ from scipy import stats
 from utils.datafetch import *
 from utils.vectorized_funs import *
 
-def calc_diff_moves(raw_df, timespan, column_slice, fillna=False, merge_result=True):
+def calc_diff_moves(raw_df, timespan, column_slice, merge_result=True):
 	"""
 		Description:
 			<Description>
@@ -28,7 +28,7 @@ def calc_diff_moves(raw_df, timespan, column_slice, fillna=False, merge_result=T
 
 	for ts_name in timespan:
 		for t in timespan[ts_name]:
-			itr_df = timewindow_diff(raw_df, column_slice=column_slice, shift_window=t, fillna=fillna, merge_result=False)
+			itr_df = timewindow_diff(raw_df, column_slice=column_slice, shift_window=t, fillna=True, merge_result=False)
 			res_df = pd.concat([res_df, itr_df], axis=1)
 
 	if merge_result:
@@ -61,7 +61,7 @@ def calc_return(raw_df, timespan, column_slice, merge_result=True):
 
 	for ts_name in timespan:
 		for t in timespan[ts_name]:
-			itr_df = timewindow_return(raw_df, column_slice=column_slice, shift_window=t, merge_result=False)
+			itr_df = timewindow_return(raw_df, column_slice=column_slice, shift_window=t, merge_result=False, fillna=True)
 			res_df = pd.concat([res_df, itr_df], axis=1)
 
 	if merge_result:
@@ -92,7 +92,7 @@ def calc_sma(raw_df, timespan, column_slice, merge_result=True):
 
 	for ts_name in timespan:
 		for t in timespan[ts_name]:
-			itr_df = roll_columns(raw_df, "mean", column_slice=column_slice, window=t, merge_result=False)
+			itr_df = roll_columns(raw_df, "mean", column_slice=column_slice, window=t, merge_result=False, pad_result=True)
 			res_df = pd.concat([res_df, itr_df], axis=1)
 
 	if merge_result:
@@ -145,29 +145,85 @@ def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 def calc_measures_tier1(raw_df, verbose=True):
 	timespan = dict();
 
+	# timespan = {
+	# 	"short_term": [1, 2, 5]
+	#     ,"medium_term": [10, 30, 40, 70, 90]
+	#     ,"long_term": [100, 200, 300, 400]
+	# }
+
+	_start = None
+	_end = None
+
+	_step_i = None
+	_step_f = None
+
 	timespan = {
-		"short_term": [1, 2, 5]
-	    ,"medium_term": [10, 30, 40, 70, 90]
-	    ,"long_term": [100, 200, 300, 400]
+		"short_term": []
+	    ,"medium_term": []
+	    ,"long_term": [150]
 	}
 
-	raw_df = calc_sma(raw_df, timespan, ["Close", "Volume", "High", "Low", "Open"], merge_result=True);
+	_start = datetime.datetime.now()
+	_step_i = _start
+
+	if verbose:
+		print("| | START     - {}".format(str(_start)))
 	
+	## SMAs
+	raw_df = calc_sma(raw_df, timespan, ["Close", "Volume", "High", "Low", "Open"], merge_result=True);
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / SMA       - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+	
+	## RETURNs
 	raw_df = calc_return(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
 
-	raw_df = calc_diff_moves(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], fillna=True, merge_result=True)
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / RETURNS   - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
 
+	## DIFF MOVEs
+	raw_df = calc_diff_moves(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / DIFF MOVE - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+	## BOLLINGER BANDs
 	raw_df = calc_bollinger(raw_df, timespan, ["Close", "Volume"], merge_result=True, scaler=2)
 
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / BOLLINGER - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+	## BETAs
 	sp500 = load_raw_frame("^GSPC")
 
 	for tterm in timespan:
 		for t in timespan[tterm]:
 			raw_df = timewindow_beta(raw_df, sp500, ["Close", "High", "Low"], t, merge_result=True)
 
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / BETA      - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+	## ALPHAs
 	for tterm in timespan:
 		for t in timespan[tterm]:
 			raw_df = timewindow_alpha(raw_df, sp500, ["Close", "High", "Low"], t, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / ALPHA     - {}".format(str(_step_f - _step_i)))
+		_end = _step_f
+		print(" V  END       - {} (TOOK {})".format(str(_end), str(_end - _start)))
 
 	return raw_df
 
