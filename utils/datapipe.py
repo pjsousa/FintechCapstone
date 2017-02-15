@@ -158,9 +158,9 @@ def calc_measures_tier1(raw_df, verbose=True):
 	_step_f = None
 
 	timespan = {
-		"short_term": []
-	    ,"medium_term": []
-	    ,"long_term": [150]
+		"short_term": [1,3,5]
+	    ,"medium_term": [40, 60]
+	    ,"long_term": [90, 150, 220]
 	}
 
 	_start = datetime.datetime.now()
