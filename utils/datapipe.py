@@ -213,7 +213,7 @@ def calc_measures_tier1(raw_df, verbose=True):
 	timespan = {
 		"short_term": [5]
 	    ,"medium_term": [30]
-	    ,"long_term": [90]
+	    ,"long_term": []
 	}
 
 	## ALPHAs  - THIS COULD BE OPTIMIZED : http://gouthamanbalaraman.com/blog/calculating-stock-beta.html
