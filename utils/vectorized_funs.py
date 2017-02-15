@@ -270,7 +270,7 @@ def timewindow_alpha(stock_df, market_df, column_slice, period, min_periods=None
 				idx = sub_df.index[-1]
 				itr_beta[idx] = calc_alpha(sub_df)
 
-		col_name = "timewindow_beta_{}_{}".format(period, col)
+		col_name = "timewindow_alpha_{}_{}".format(period, col)
 		result[col_name] = itr_beta
 
 	if merge_result:
@@ -282,10 +282,64 @@ def timewindow_alpha(stock_df, market_df, column_slice, period, min_periods=None
 	return result
 
 
+def calc_alphabeta(df):
+	np_array = df.values
+	s = np_array[:,0] # stock returns are column zero from numpy array
+	m = np_array[:,1] # market returns are column one from numpy array
+
+	slope, intercept, r_value, p_value, std_err = stats.linregress(s, m)
+
+	##covariance = np.cov(s,m) # Calculate covariance between stock and market
+	##beta = covariance[0,1]/covariance[1,1]
+	return slope, intercept
 
 
+def timewindow_alphabeta(stock_df, market_df, column_slice, period, min_periods=None, set_indexes=True, merge_result=False, return_alpha=True, return_beta=True, fillna=True):
+	if min_periods is None:
+		min_periods = period
+	
+	if set_indexes:
+		stock_i = stock_df.set_index("Date")
+		market_i = market_df.set_index("Date")
+	else:
+		stock_i = stock_df
+		market_i = market_df
+
+	result = pd.DataFrame(index=stock_i.index)
+
+	for col in column_slice:
+		joined_df = pd.merge(stock_i.loc[:,[col]], market_i.loc[:,[col]], how="left", left_index=True, right_index=True)
+		
+		itr_beta = pd.Series(np.nan, index=joined_df.index)
+		itr_alpha = pd.Series(np.nan, index=joined_df.index)
+
+		for i in range(1, len(joined_df)+1):
+			sub_df = joined_df.iloc[max(i-period, 0):i,:]
+			if len(sub_df) >= min_periods:
+				idx = sub_df.index[-1]
+				slope, intercept = calc_alphabeta(sub_df)
+				itr_beta[idx] = slope
+				itr_alpha[idx] = intercept
+
+		if return_beta:
+			col_name = "timewindow_beta_{}_{}".format(period, col)
+			result[col_name] = itr_beta
+		
+		if return_alpha:
+			col_name = "timewindow_alpha_{}_{}".format(period, col)
+			result[col_name] = itr_alpha
 
 
+	if merge_result:
+		if set_indexes:
+			result = pd.merge(stock_df, result, left_on='Date', right_index=True)
+		else:
+			result = pd.concat([stock_df, result], axis=1);
+
+	if fillna:
+		result.fillna(0, inplace=True)
+
+	return result
 
 
 

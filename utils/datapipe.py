@@ -168,7 +168,9 @@ def calc_measures_tier1(raw_df, verbose=True):
 
 	if verbose:
 		print("| | START     - {}".format(str(_start)))
-	
+
+
+
 	## SMAs
 	raw_df = calc_sma(raw_df, timespan, ["Close", "Volume", "High", "Low", "Open"], merge_result=True);
 
@@ -177,7 +179,8 @@ def calc_measures_tier1(raw_df, verbose=True):
 		print("\ / SMA       - {}".format(str(_step_f - _step_i)))
 		_step_i = _step_f
 
-	
+
+
 	## RETURNs
 	raw_df = calc_return(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
 
@@ -185,6 +188,8 @@ def calc_measures_tier1(raw_df, verbose=True):
 		_step_f = datetime.datetime.now()
 		print("\ / RETURNS   - {}".format(str(_step_f - _step_i)))
 		_step_i = _step_f
+
+
 
 	## DIFF MOVEs
 	raw_df = calc_diff_moves(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
@@ -194,6 +199,8 @@ def calc_measures_tier1(raw_df, verbose=True):
 		print("\ / DIFF MOVE - {}".format(str(_step_f - _step_i)))
 		_step_i = _step_f
 
+
+
 	## BOLLINGER BANDs
 	raw_df = calc_bollinger(raw_df, timespan, ["Close", "Volume"], merge_result=True, scaler=2)
 
@@ -202,7 +209,11 @@ def calc_measures_tier1(raw_df, verbose=True):
 		print("\ / BOLLINGER - {}".format(str(_step_f - _step_i)))
 		_step_i = _step_f
 
-	## BETAs
+
+
+	## ALPHAs  - THIS COULD BE OPTIMIZED : http://gouthamanbalaraman.com/blog/calculating-stock-beta.html
+	## +
+	## BETAs  - THIS COULD BE OPTIMIZED : http://stackoverflow.com/a/39503417
 	sp500 = load_raw_frame("^GSPC")
 
 	for tterm in timespan:
@@ -211,17 +222,7 @@ def calc_measures_tier1(raw_df, verbose=True):
 
 	if verbose:
 		_step_f = datetime.datetime.now()
-		print("\ / BETA      - {}".format(str(_step_f - _step_i)))
-		_step_i = _step_f
-
-	## ALPHAs
-	for tterm in timespan:
-		for t in timespan[tterm]:
-			raw_df = timewindow_alpha(raw_df, sp500, ["Close", "High", "Low"], t, merge_result=True)
-
-	if verbose:
-		_step_f = datetime.datetime.now()
-		print("\ / ALPHA     - {}".format(str(_step_f - _step_i)))
+		print("\ / ALPHABETA - {}".format(str(_step_f - _step_i)))
 		_end = _step_f
 		print(" V  END       - {} (TOOK {})".format(str(_end), str(_end - _start)))
 
