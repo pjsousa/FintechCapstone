@@ -265,7 +265,7 @@ def calc_aftermarket_bollinger(stock_df, timespan, merge_result=False):
 	else:
 		afm_ret = stock_df
 
-	res_df = calc_bollinger(raw_df, timespan, ["aftermarket_return"], merge_result=False, scaler=2)
+	res_df = calc_bollinger(afm_ret, timespan, ["aftermarket_return"], merge_result=False, scaler=2)
 
 	if merge_result:
 		res_df = pd.concat([stock_df, res_df], axis=1);
