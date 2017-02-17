@@ -245,4 +245,3 @@ def timewindow_alphabeta(stock_df, market_df, column_slice, period, min_periods=
 	return result
 
 
-

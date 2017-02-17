@@ -144,136 +144,6 @@ def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 
 
 
-def calc_aftermarket_diff(stock_df, fillna=True, merge_result=False):
-	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
-	"""
-
-	_r = None
-	temp_ser = (stock_df["Open"] - stock_df["Close"].shift(1))
-	
-	if fillna:
-		temp_ser = temp_ser.fillna(value=0)
-
-	if merge_result:
-		stock_df["aftermarket_diff"] = temp_ser
-		_r = stock_df
-	else:
-		_r = pd.DataFrame(temp_ser, columns=["aftermarket_diff"])
-
-	return _r
-
-
-
-def calc_aftermarket_return(stock_df, fillna=True, merge_result=False):
-	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
-	"""
-
-	_r = None
-	temp_ser = ((stock_df["Open"] / stock_df["Close"].shift(1))) - 1
-	
-	if fillna:
-		temp_ser = temp_ser.fillna(value=0)
-
-	if merge_result:
-		stock_df["aftermarket_return"] = temp_ser
-		_r = stock_df
-	else:
-		_r = pd.DataFrame(temp_ser, columns=["aftermarket_return"])
-
-	return _r
-
-
-
-def calc_aftermarket_sma(stock_df, timespan, merge_result=False):
-	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
-	"""
-
-	afm_ret = None
-	res_df = None
-	
-	if not ( "aftermarket_return" in stock_df.columns) :
-		afm_ret = calc_aftermarket_return(stock_df, merge_result=False)
-	else:
-		afm_ret = stock_df
-
-	res_df = calc_sma(afm_ret, timespan, ["aftermarket_return"], merge_result=False);
-
-	if merge_result:
-		res_df = pd.concat([stock_df, res_df], axis=1);
-
-	return res_df
-
-
-
-def calc_aftermarket_bollinger(stock_df, timespan, merge_result=False):
-	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
-	"""
-
-	afm_ret = None
-	res_df = None
-	
-	if not ( "aftermarket_return" in stock_df.columns) :
-		afm_ret = calc_aftermarket_return(stock_df, merge_result=False)
-	else:
-		afm_ret = stock_df
-
-	res_df = calc_bollinger(afm_ret, timespan, ["aftermarket_return"], merge_result=False, scaler=2)
-
-	if merge_result:
-		res_df = pd.concat([stock_df, res_df], axis=1);
-
-	return res_df
-
-
-
 def calc_measures_tier1(raw_df, verbose=True):
 	"""
 		Description:
@@ -380,3 +250,171 @@ def calc_measures_tier1(raw_df, verbose=True):
 
 	return raw_df
 
+
+
+def calc_aftermarket_diff(raw_df, fillna=True, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	temp_ser = (raw_df["Open"] - raw_df["Close"].shift(1))
+	
+	if fillna:
+		temp_ser = temp_ser.fillna(value=0)
+
+	if merge_result:
+		raw_df["aftermarket_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["aftermarket_diff"])
+
+	return _r
+
+
+
+def calc_aftermarket_return(raw_df, fillna=True, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	temp_ser = ((raw_df["Open"] / raw_df["Close"].shift(1))) - 1
+	
+	if fillna:
+		temp_ser = temp_ser.fillna(value=0)
+
+	if merge_result:
+		raw_df["aftermarket_return"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["aftermarket_return"])
+
+	return _r
+
+
+
+def calc_aftermarket_sma(raw_df, timespan, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	afm_ret = None
+	res_df = None
+	
+	if not ( "aftermarket_return" in raw_df.columns) :
+		afm_ret = calc_aftermarket_return(raw_df, merge_result=False)
+	else:
+		afm_ret = raw_df
+
+	res_df = calc_sma(afm_ret, timespan, ["aftermarket_return"], merge_result=False);
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_aftermarket_bollinger(raw_df, timespan, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	afm_ret = None
+	res_df = None
+	
+	if not ( "aftermarket_return" in raw_df.columns) :
+		afm_ret = calc_aftermarket_return(raw_df, merge_result=False)
+	else:
+		afm_ret = raw_df
+
+	res_df = calc_bollinger(afm_ret, timespan, ["aftermarket_return"], merge_result=False, scaler=2)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_highlow_diff(raw_df, merge_result=False):
+	_r = None
+	temp_ser = raw_df["High"] - raw_df["Low"]
+
+	if merge_result:
+		_r = raw_df["hilo_diff"] = temp_ser
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["hilo_diff"])
+
+	return _r
+
+
+
+def calc_closelow_diff(raw_df, merge_result):
+	_r = None
+	temp_ser = raw_df["Close"] - raw_df["Low"]
+
+	if merge_result:
+		_r = raw_df["closelo_diff"] = temp_ser
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["closelo_diff"])
+
+	return _r
+
+
+
+def calc_closehigh_diff(raw_df, merge_result):
+	_r = None
+	temp_ser = raw_df["High"] - raw_df["Close"]
+
+	if merge_result:
+		_r = raw_df["closehi_diff"] = temp_ser
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["closehi_diff"])
+
+	return _r
