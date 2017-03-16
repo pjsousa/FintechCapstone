@@ -5,6 +5,8 @@ import pandas as pd
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
 RAW_DATA_PATH = "{}/A_RAW".format(DATA_PATH)
+TIER1_DATA_PATH = "{}/B_TIER1".format(DATA_PATH)
+TIER2_DATA_PATH = "{}/C_TIER2".format(DATA_PATH)
 
 def fetch_quotes(ticker, from_date=datetime.datetime(1900, 1, 1), to_date=datetime.datetime.now(), source="yahoo"):
 	"""
@@ -34,6 +36,7 @@ _EXCHANGES = [
 	,"nasdaq"
 	,"nyse"
 ]
+
 
 def load_exchangesinfos(config_path=CONFIG_PATH, verbose=True):
 	"""
@@ -81,6 +84,7 @@ def load_exchangesinfos(config_path=CONFIG_PATH, verbose=True):
 
 	return _r
 
+
 def duplicate_tickers(df, ign_exchange=False):
 	"""
 		Description:
@@ -105,6 +109,7 @@ def duplicate_tickers(df, ign_exchange=False):
 		_r["ignoring_exchange"] = _r.duplicated(["Symbol", "Name", "MarketCap", "Sector", "Industry"])
 
 	return _r
+
 
 def initial_dataload(ticker_list, verbose=True, del_temp=False):
 	"""
@@ -140,7 +145,7 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False):
 		else:
 			itr_err = False
 			_r["OK"].append(itr_tkr)
-			itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8", mode="a")
+			itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8")
 			if del_temp:
 				del itr_df
 
@@ -157,7 +162,7 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False):
 	return _r
 
 
-def load_raw_frame(ticker, tryfetch=True):
+def load_raw_frame(ticker, tryfetch=True, parseDate=True):
 	"""
 		Description:
 			<Description>
@@ -176,12 +181,118 @@ def load_raw_frame(ticker, tryfetch=True):
 	_r = None
 	try:
 		_r = pd.read_csv("{}/{}.csv".format(DATA_PATH, ticker))
+
+		if parseDate:
+			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
 	except FileNotFoundError:
 		if tryfetch:
 			initial_dataload([ticker], False, True)
 			_r = load_raw_frame(ticker, False)
 		else:
 			_r = None
+
+	return _r
+
+
+def store_tier1_frame(tier1_df, ticker):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	try:
+		tier1_df.to_hdf("{}/{}.h5".format(TIER1_DATA_PATH, ticker), "TIER1")
+		_r = True
+	except:
+		_r = False
+
+	return _r
+
+
+def load_tier1_frame(ticker):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	try:
+		_r = pd.read_hdf("{}/{}.h5".format(TIER1_DATA_PATH, ticker), "TIER1")
+	except:
+		_r = None
+
+	return _r
+
+
+
+def store_tier2_frame(tier1_df, ticker):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	try:
+		tier1_df.to_csv("{}/{}.csv".format(TIER2_DATA_PATH, ticker))
+		_r = True
+	except:
+		_r = False
+
+	return _r
+
+
+def load_tier2_frame(ticker):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	try:
+		_r = pd.read_csv("{}/{}.csv".format(TIER2_DATA_PATH, ticker))
+	except:
+		_r = None
 
 	return _r
 

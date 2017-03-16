@@ -7,7 +7,7 @@ from scipy import stats
 from utils.datafetch import *
 from utils.vectorized_funs import *
 
-def calc_diff_moves(raw_df, timespan, column_slice, fillna=False, merge_result=True):
+def calc_diff_moves(raw_df, timespan, column_slice, merge_result=True, fillna=True):
 	"""
 		Description:
 			<Description>
@@ -61,7 +61,7 @@ def calc_return(raw_df, timespan, column_slice, merge_result=True):
 
 	for ts_name in timespan:
 		for t in timespan[ts_name]:
-			itr_df = timewindow_return(raw_df, column_slice=column_slice, shift_window=t, merge_result=False)
+			itr_df = timewindow_return(raw_df, column_slice=column_slice, shift_window=t, merge_result=False, fillna=True)
 			res_df = pd.concat([res_df, itr_df], axis=1)
 
 	if merge_result:
@@ -92,13 +92,14 @@ def calc_sma(raw_df, timespan, column_slice, merge_result=True):
 
 	for ts_name in timespan:
 		for t in timespan[ts_name]:
-			itr_df = roll_columns(raw_df, "mean", column_slice=column_slice, window=t, merge_result=False)
+			itr_df = roll_columns(raw_df, "mean", column_slice=column_slice, window=t, merge_result=False, pad_result=True)
 			res_df = pd.concat([res_df, itr_df], axis=1)
 
 	if merge_result:
 		res_df = pd.concat([raw_df, res_df], axis=1);
 
 	return res_df
+
 
 
 def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
@@ -128,9 +129,9 @@ def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 					upper_band = itr_df.apply(lambda x: raw_df[col] + x)
 					lower_band = itr_df.apply(lambda x: raw_df[col] - x)
 					
-					roll_name = "{}_roll_2std_{}".format("Close", t)
-					upper_name = "{}_bollinger_{}_up".format("Close", t)
-					lower_name = "{}_bollinger_{}_low".format("Close", t)
+					roll_name = "{}_roll_2std_{}".format(col, t)
+					upper_name = "{}_bollinger_{}_up".format(col, t)
+					lower_name = "{}_bollinger_{}_low".format(col, t)
 					
 					res_df[roll_name] = itr_df.iloc[:, 0]
 					res_df[upper_name] = upper_band
@@ -142,3 +143,402 @@ def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 	return res_df
 
 
+
+def calc_measures_tier1(raw_df, verbose=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	timespan = dict();
+
+	# timespan = {
+	# 	"short_term": [1, 2, 5]
+	#     ,"medium_term": [10, 30, 40, 70, 90]
+	#     ,"long_term": [100, 200, 300, 400]
+	# }
+
+	_start = None
+	_end = None
+
+	_step_i = None
+	_step_f = None
+
+	timespan = {
+		"short_term": [1,3,5]
+	    ,"medium_term": [40, 60]
+	    ,"long_term": [90, 150, 220]
+	}
+
+	_start = datetime.datetime.now()
+	_step_i = _start
+
+	if verbose:
+		print("| | START     - {}".format(str(_start)))
+
+
+
+	## SMAs
+	raw_df = calc_sma(raw_df, timespan, ["Close", "Volume", "High", "Low", "Open"], merge_result=True);
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / SMA       - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## RETURNs
+	raw_df = calc_return(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / RETURNS   - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## DIFF MOVEs
+	raw_df = calc_diff_moves(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / DIFF MOVE - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## BOLLINGER BANDs
+	raw_df = calc_bollinger(raw_df, timespan, ["Close", "Volume"], merge_result=True, scaler=2)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / BOLLINGER - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+	timespan = {
+		"short_term": [5]
+	    ,"medium_term": [30]
+	    ,"long_term": [20]
+	}
+
+	## ALPHAs  - THIS COULD BE OPTIMIZED : http://gouthamanbalaraman.com/blog/calculating-stock-beta.html
+	## +
+	## BETAs  - THIS COULD BE OPTIMIZED : http://stackoverflow.com/a/39503417
+	sp500 = load_raw_frame("^GSPC")
+
+	for tterm in timespan:
+		for t in timespan[tterm]:
+			raw_df = timewindow_alphabeta(raw_df, sp500, ["Close", "High", "Low"], t, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / ALPHABETA - {}".format(str(_step_f - _step_i)))
+		_end = _step_f
+		print(" V  END       - {} (TOOK {})".format(str(_end), str(_end - _start)))
+
+	return raw_df
+
+
+
+def calc_aftermarket_diff(raw_df, fillna=True, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	temp_ser = (raw_df["Open"] - raw_df["Close"].shift(1))
+	
+	if fillna:
+		temp_ser = temp_ser.fillna(value=0)
+
+	if merge_result:
+		raw_df["aftermarket_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["aftermarket_diff"])
+
+	return _r
+
+
+
+def calc_aftermarket_return(raw_df, fillna=True, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	temp_ser = ((raw_df["Open"] / raw_df["Close"].shift(1))) - 1
+	
+	if fillna:
+		temp_ser = temp_ser.fillna(value=0)
+
+	if merge_result:
+		raw_df["aftermarket_return"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["aftermarket_return"])
+
+	return _r
+
+
+
+def calc_aftermarket_sma(raw_df, timespan, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	afm_ret = None
+	res_df = None
+	
+	if not ( "aftermarket_return" in raw_df.columns) :
+		afm_ret = calc_aftermarket_return(raw_df, merge_result=False)
+	else:
+		afm_ret = raw_df
+
+	res_df = calc_sma(afm_ret, timespan, ["aftermarket_return"], merge_result=False);
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_aftermarket_bollinger(raw_df, timespan, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	afm_ret = None
+	res_df = None
+	
+	if not ( "aftermarket_return" in raw_df.columns) :
+		afm_ret = calc_aftermarket_return(raw_df, merge_result=False)
+	else:
+		afm_ret = raw_df
+
+	res_df = calc_bollinger(afm_ret, timespan, ["aftermarket_return"], merge_result=False, scaler=2)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_highlow_diff(raw_df, merge_result=False):
+	_r = None
+	temp_ser = raw_df["High"] - raw_df["Low"]
+
+	if merge_result:
+		raw_df["hilo_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["hilo_diff"])
+
+	return _r
+
+
+
+def calc_closelow_diff(raw_df, merge_result):
+	_r = None
+	temp_ser = raw_df["Close"] - raw_df["Low"]
+
+	if merge_result:
+		raw_df["closelo_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["closelo_diff"])
+
+	return _r
+
+
+def calc_closehigh_diff(raw_df, merge_result):
+	_r = None
+	temp_ser = raw_df["High"] - raw_df["Close"]
+
+	if merge_result:
+		raw_df["closehi_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["closehi_diff"])
+
+	return _r
+
+
+def calc_measures_tier2(raw_df, verbose=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	timespan = dict();
+
+	# timespan = {
+	# 	"short_term": [1, 2, 5]
+	#     ,"medium_term": [10, 30, 40, 70, 90]
+	#     ,"long_term": [100, 200, 300, 400]
+	# }
+
+	_start = None
+	_end = None
+
+	_step_i = None
+	_step_f = None
+
+	timespan = {
+		"short_term": [1,3,5]
+	    ,"medium_term": [40, 60]
+	    ,"long_term": [90, 150, 220]
+	}
+
+	_start = datetime.datetime.now()
+	_step_i = _start
+
+	if verbose:
+		print("| | START     - {}".format(str(_start)))
+
+
+
+	## AFTERMARKET DIFF
+	raw_df = calc_aftermarket_diff(raw_df, fillna=True, merge_result=True);
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / AM DIFF       - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## AFTERMARKET RETURNs
+	raw_df = calc_aftermarket_return(raw_df, fillna=True, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / AM RETURNS   - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## AFTERMARKET RETURNS SMA
+	raw_df = calc_aftermarket_sma(raw_df, timespan=timespan, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / AM SMA - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## AFTERMARKET RETURNS BOLLINGER
+	raw_df = calc_aftermarket_bollinger(raw_df, timespan, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / AM BOLLINGER - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## INTRADAY HIGH-LOW DIFFERENCE
+	raw_df = calc_highlow_diff(raw_df, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / HL DIFF - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## INTRADAY CLOSE-LOW DIFFERENCE
+	raw_df = calc_closelow_diff(raw_df, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / CL DIFF - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	## INTRADAY CLOSE-HIGH DIFFERENCE
+	raw_df = calc_closehigh_diff(raw_df, merge_result=True)
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		print("\ / CH DIFF - {}".format(str(_step_f - _step_i)))
+		_step_i = _step_f
+
+
+
+	if verbose:
+		_step_f = datetime.datetime.now()
+		_end = _step_f
+		print(" V  END       - {} (TOOK {})".format(str(_end), str(_end - _start)))
+
+	return raw_df
