@@ -28,7 +28,7 @@ def calc_diff_moves(raw_df, timespan, column_slice, merge_result=True, fillna=Tr
 
 	for ts_name in timespan:
 		for t in timespan[ts_name]:
-			itr_df = timewindow_diff(raw_df, column_slice=column_slice, shift_window=t, fillna=fillna, merge_result=False)
+			itr_df = timewindow_diff(raw_df, column_slice=column_slice, shift_window=t, fillna=True, merge_result=False)
 			res_df = pd.concat([res_df, itr_df], axis=1)
 
 	if merge_result:
