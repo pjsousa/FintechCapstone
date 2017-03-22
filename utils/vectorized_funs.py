@@ -4,6 +4,8 @@ import datetime
 from functools import partial
 from scipy import stats
 
+TINY_FLOAT = 1e-128
+
 def roll_columns(orig_df, stat_fun_name, column_slice=None, window=None, merge_result=False, pad_result=False, scaler=1):
 	"""
 		Description:
@@ -84,7 +86,7 @@ def timewindow_diff(orig_df, column_slice=None, shift_window=1, fillna=False, me
 	temp_df.columns = ["timewindow_diff_{}_{}".format(shift_window,x) for x in column_slice]
 
 	if fillna:
-		temp_df = temp_df.fillna(value=0)
+		temp_df = temp_df.fillna(value=TINY_FLOAT)
 
 	if merge_result:
 		temp_df = pd.concat([orig_df, temp_df], axis=1);
@@ -115,7 +117,7 @@ def timewindow_return(orig_df, column_slice=None, shift_window=1, fillna=False, 
 	temp_df.columns = ["timewindow_return_{}_{}".format(shift_window,x) for x in column_slice]
 
 	if fillna:
-		temp_df = temp_df.fillna(value=0)
+		temp_df = temp_df.fillna(value=TINY_FLOAT)
 
 	if merge_result:
 		temp_df = pd.concat([orig_df, temp_df], axis=1);
@@ -146,7 +148,7 @@ def timewindow_cumdiff(orig_df, column_slice=None, fillna=False, merge_result=Fa
 	temp_df.columns = ["timewindow_cumdiff_{}".format(x) for x in column_slice]
 
 	if fillna:
-		temp_df = temp_df.fillna(value=0)
+		temp_df = temp_df.fillna(value=TINY_FLOAT)
 
 	if merge_result:
 		temp_df = pd.concat([orig_df, temp_df], axis=1);
@@ -177,7 +179,7 @@ def timewindow_cumreturn(orig_df, column_slice=None, fillna=False, merge_result=
 	temp_df.columns = ["timewindow_cumreturn_{}".format(x) for x in column_slice]
 
 	if fillna:
-		temp_df = temp_df.fillna(value=0)
+		temp_df = temp_df.fillna(value=TINY_FLOAT)
 
 	if merge_result:
 		temp_df = pd.concat([orig_df, temp_df], axis=1);
@@ -240,8 +242,313 @@ def timewindow_alphabeta(stock_df, market_df, column_slice, period, min_periods=
 			result = pd.concat([stock_df, result], axis=1);
 
 	if fillna:
-		result.fillna(0, inplace=True)
+		result.fillna(TINY_FLOAT, inplace=True)
 
 	return result
 
 
+def calc_diff_moves(raw_df, timespan, column_slice, merge_result=True, fillna=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	res_df = pd.DataFrame()
+	itr_df = pd.DataFrame()
+
+	for ts_name in timespan:
+		for t in timespan[ts_name]:
+			itr_df = timewindow_diff(raw_df, column_slice=column_slice, shift_window=t, fillna=True, merge_result=False)
+			res_df = pd.concat([res_df, itr_df], axis=1)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	itr_df = None
+
+	return res_df
+
+
+
+def calc_return(raw_df, timespan, column_slice, merge_result=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	res_df = pd.DataFrame()
+	itr_df = pd.DataFrame()
+
+	for ts_name in timespan:
+		for t in timespan[ts_name]:
+			itr_df = timewindow_return(raw_df, column_slice=column_slice, shift_window=t, merge_result=False, fillna=True)
+			res_df = pd.concat([res_df, itr_df], axis=1)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_sma(raw_df, timespan, column_slice, merge_result=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	res_df = pd.DataFrame()
+	itr_df = pd.DataFrame()
+
+	for ts_name in timespan:
+		for t in timespan[ts_name]:
+			itr_df = roll_columns(raw_df, "mean", column_slice=column_slice, window=t, merge_result=False, pad_result=True)
+			res_df = pd.concat([res_df, itr_df], axis=1)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	itr_df = pd.DataFrame()
+	res_df = pd.DataFrame()
+
+	for col in column_slice:
+		for ts_name in timespan:
+			if ts_name in ["medium_term", "long_term"]:
+				for t in timespan[ts_name]:
+					itr_df = roll_columns(raw_df, "std", column_slice=[col], window=t, merge_result=False, scaler=scaler, pad_result=True)
+					upper_band = itr_df.apply(lambda x: raw_df[col] + x)
+					lower_band = itr_df.apply(lambda x: raw_df[col] - x)
+					
+					roll_name = "{}_roll_2std_{}".format(col, t)
+					upper_name = "{}_bollinger_{}_up".format(col, t)
+					lower_name = "{}_bollinger_{}_low".format(col, t)
+					
+					res_df[roll_name] = itr_df.iloc[:, 0]
+					res_df[upper_name] = upper_band
+					res_df[lower_name] = lower_band
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_aftermarket_diff(raw_df, fillna=True, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	temp_ser = (raw_df["Open"] - raw_df["Close"].shift(1))
+	
+	if fillna:
+		temp_ser = temp_ser.fillna(value=TINY_FLOAT)
+
+	if merge_result:
+		raw_df["aftermarket_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["aftermarket_diff"])
+
+	return _r
+
+
+
+def calc_aftermarket_return(raw_df, fillna=True, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	temp_ser = ((raw_df["Open"] / raw_df["Close"].shift(1))) - 1
+	
+	if fillna:
+		temp_ser = temp_ser.fillna(value=TINY_FLOAT)
+
+	if merge_result:
+		raw_df["aftermarket_return"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["aftermarket_return"])
+
+	return _r
+
+
+
+def calc_aftermarket_sma(raw_df, timespan, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	afm_ret = None
+	res_df = None
+	
+	if not ( "aftermarket_return" in raw_df.columns) :
+		afm_ret = calc_aftermarket_return(raw_df, merge_result=False)
+	else:
+		afm_ret = raw_df
+
+	res_df = calc_sma(afm_ret, timespan, ["aftermarket_return"], merge_result=False);
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_aftermarket_bollinger(raw_df, timespan, merge_result=False):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	afm_ret = None
+	res_df = None
+	
+	if not ( "aftermarket_return" in raw_df.columns) :
+		afm_ret = calc_aftermarket_return(raw_df, merge_result=False)
+	else:
+		afm_ret = raw_df
+
+	res_df = calc_bollinger(afm_ret, timespan, ["aftermarket_return"], merge_result=False, scaler=2)
+
+	if merge_result:
+		res_df = pd.concat([raw_df, res_df], axis=1);
+
+	return res_df
+
+
+
+def calc_highlow_diff(raw_df, merge_result=False):
+	_r = None
+	temp_ser = raw_df["High"] - raw_df["Low"]
+
+	if merge_result:
+		raw_df["hilo_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["hilo_diff"])
+
+	return _r
+
+
+
+def calc_closelow_diff(raw_df, merge_result):
+	_r = None
+	temp_ser = raw_df["Close"] - raw_df["Low"]
+
+	if merge_result:
+		raw_df["closelo_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["closelo_diff"])
+
+	return _r
+
+
+def calc_closehigh_diff(raw_df, merge_result):
+	_r = None
+	temp_ser = raw_df["High"] - raw_df["Close"]
+
+	if merge_result:
+		raw_df["closehi_diff"] = temp_ser
+		_r = raw_df
+	else:
+		_r = pd.DataFrame(temp_ser, columns=["closehi_diff"])
+
+	return _r

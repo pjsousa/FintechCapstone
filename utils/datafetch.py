@@ -264,7 +264,7 @@ def store_tier2_frame(tier1_df, ticker):
 
 	_r = None
 	try:
-		tier1_df.to_csv("{}/{}.csv".format(TIER2_DATA_PATH, ticker))
+		tier1_df.to_csv("{}/{}.csv".format(TIER2_DATA_PATH, ticker), index=False)
 		_r = True
 	except:
 		_r = False
@@ -272,7 +272,7 @@ def store_tier2_frame(tier1_df, ticker):
 	return _r
 
 
-def load_tier2_frame(ticker):
+def load_tier2_frame(ticker, parseDate=True):
 	"""
 		Description:
 			<Description>
@@ -291,6 +291,9 @@ def load_tier2_frame(ticker):
 	_r = None
 	try:
 		_r = pd.read_csv("{}/{}.csv".format(TIER2_DATA_PATH, ticker))
+
+		if parseDate:
+			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
 	except:
 		_r = None
 
