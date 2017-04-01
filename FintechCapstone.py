@@ -117,23 +117,25 @@ class FinCapstone():
 
 
 
-	def feature_engineering(self):
+	def feature_engineering(self, feature_set="baseline"):
 		## Only work with tickers that were successfull during datafetch
 		ticker_list = self.provision_validtickerlist()
-
 
 		for ix, row in ticker_list.iterrows():
 			itr_ticker = row["Symbol"]
 			print("\n\n - {} - \n".format(itr_ticker))
 			itr_df = datafetch.load_raw_frame(itr_ticker, parseDate=False)
-
 			#Lets get only from 2010 onward
 			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
 			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
 
-			itr_df = self.calc_measures_tier1(itr_df, verbose=True)
-			itr_df = self.calc_measures_tier2(itr_df, verbose=True)
-			datafetch.store_tier2_frame(itr_df, itr_ticker)
+			if feature_set == "baseline":
+				itr_df = self.calc_baseline(itr_df, verbose=True)
+				datafetch.store_baseline_frame(itr_df, itr_ticker)
+			else:
+				itr_df = self.calc_measures_tier1(itr_df, verbose=True)
+				itr_df = self.calc_measures_tier2(itr_df, verbose=True)
+				datafetch.store_tier2_frame(itr_df, itr_ticker)
 
 
 
@@ -192,6 +194,11 @@ class FinCapstone():
 
 		## RETURNs
 		raw_df = vectorized_funs.calc_return(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
+
+		shift_backcols = list(filter(lambda x: ("return" in x) and ("Close" in x)  , raw_df.columns.tolist()))
+		for col in shift_backcols:
+			_timewindows = [int(s) for s in col.split("_") if s.isdigit()]
+			raw_df[col] = raw_df[col].shift(_timewindows[0] * -1)
 
 		if verbose:
 			self.print_verbose("RETURNS")
@@ -316,6 +323,45 @@ class FinCapstone():
 
 
 
+
+	def calc_baseline(self, raw_df, verbose=True):
+		timespan = None
+
+		if verbose:
+			self.print_verbose_start()
+
+
+		## NORMALIZE
+		
+		timespan = {
+			"short_term": [1]
+			,"medium_term": []
+			,"long_term": []
+		}
+
+		raw_df = vectorized_funs.calc_return(raw_df, timespan=timespan, column_slice=["Open", "High", "Low", "Volume"], merge_result=True)
+
+		## RETURNs
+		timespan = self.timespan
+		raw_df = vectorized_funs.calc_return(raw_df, timespan=timespan, column_slice=["Close"], merge_result=True)
+
+		## Shift returns
+		shift_backcols = list(filter(lambda x: ("return" in x) and ("Close" in x)  , raw_df.columns.tolist()))
+		for col in shift_backcols:
+			_timewindows = [int(s) for s in col.split("_") if s.isdigit()]
+			raw_df[col] = raw_df[col].shift(_timewindows[0] * -1)
+
+		if verbose:
+			self.print_verbose("RETURNS")
+
+		if verbose:
+			self.print_verbose_end()
+
+		return raw_df
+
+
+
+
 	## Verbose Helpers
 	def reset_verboseclock(self):
 		self._start = datetime.datetime.now()
@@ -334,11 +380,6 @@ class FinCapstone():
 		self._step_f = datetime.datetime.now()
 		self._end = self._step_f
 		print(" V  END       - {} (TOOK {})".format(str(self._end), str(self._end - self._start)))
-
-
-
-
-
 
 
 

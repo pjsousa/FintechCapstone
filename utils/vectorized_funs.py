@@ -64,6 +64,7 @@ def roll_columns(orig_df, stat_fun_name, column_slice=None, window=None, merge_r
 	return temp_df
 
 
+
 def timewindow_diff(orig_df, column_slice=None, shift_window=1, fillna=False, merge_result=False):
 	"""
 		Description:
@@ -92,6 +93,7 @@ def timewindow_diff(orig_df, column_slice=None, shift_window=1, fillna=False, me
 		temp_df = pd.concat([orig_df, temp_df], axis=1);
 
 	return temp_df
+
 
 
 def timewindow_return(orig_df, column_slice=None, shift_window=1, fillna=False, merge_result=False):
@@ -125,6 +127,7 @@ def timewindow_return(orig_df, column_slice=None, shift_window=1, fillna=False, 
 	return temp_df
 
 
+
 def timewindow_cumdiff(orig_df, column_slice=None, fillna=False, merge_result=False):
 	"""
 		Description:
@@ -154,6 +157,7 @@ def timewindow_cumdiff(orig_df, column_slice=None, fillna=False, merge_result=Fa
 		temp_df = pd.concat([orig_df, temp_df], axis=1);
 
 	return temp_df
+
 
 
 def timewindow_cumreturn(orig_df, column_slice=None, fillna=False, merge_result=False):
@@ -187,6 +191,7 @@ def timewindow_cumreturn(orig_df, column_slice=None, fillna=False, merge_result=
 	return temp_df
 
 
+
 def calc_alphabeta(df):
 	np_array = df.values
 	s = np_array[:,0] # stock returns are column zero from numpy array
@@ -197,6 +202,7 @@ def calc_alphabeta(df):
 	##covariance = np.cov(s,m) # Calculate covariance between stock and market
 	##beta = covariance[0,1]/covariance[1,1]
 	return slope, intercept
+
 
 
 def timewindow_alphabeta(stock_df, market_df, column_slice, period, min_periods=None, set_indexes=True, merge_result=False, return_alpha=True, return_beta=True, fillna=True):
@@ -245,6 +251,7 @@ def timewindow_alphabeta(stock_df, market_df, column_slice, period, min_periods=
 		result.fillna(TINY_FLOAT, inplace=True)
 
 	return result
+
 
 
 def calc_diff_moves(raw_df, timespan, column_slice, merge_result=True, fillna=True):
@@ -541,6 +548,7 @@ def calc_closelow_diff(raw_df, merge_result):
 	return _r
 
 
+
 def calc_closehigh_diff(raw_df, merge_result):
 	_r = None
 	temp_ser = raw_df["High"] - raw_df["Close"]
@@ -552,3 +560,138 @@ def calc_closehigh_diff(raw_df, merge_result):
 		_r = pd.DataFrame(temp_ser, columns=["closehi_diff"])
 
 	return _r
+
+
+
+def digitize_multitonic(values, bins):
+	"""
+		Done like this.
+		https://docs.google.com/spreadsheets/d/1O6mcYoKiiMCbyM3V_tztd94XPGyw6rU2Fghhokq6kVs/edit#gid=1323898421
+	"""
+
+	print(values.name)
+	print(values.shape)
+	values = values.values.reshape((values.shape[0], 1))
+
+	print(values.shape)
+	print(bins.shape)
+
+	diffs = np.subtract(values, bins)
+	diffs = pd.DataFrame(diffs)
+
+	signs = np.sign(diffs)
+
+	def findfirst(row, value=0):
+		_r = row[row == value]
+		if _r.shape[0] == 0:
+			_r = -1
+		else:
+			_r = _r.index[0]
+		return _r
+
+	pos = pd.DataFrame(columns=["<0", "=0",">0"])
+	pos["<0"] = signs.apply(partial(findfirst, value=-1), axis=1)
+	pos["=0"] = signs.apply(partial(findfirst, value=0), axis=1)
+	pos[">0"] = signs.apply(partial(findfirst, value=1), axis=1)
+	pos.loc[(pos["<0"] == -1) & (pos["=0"] == -1), [">0"]] = -1
+
+	has = pd.DataFrame(columns=["<0", "=0",">0"])
+	has["<0"] = (signs == -1).astype(np.int).apply(np.sum, axis=1)
+	has["=0"] = (signs == 0).astype(np.int).apply(np.sum, axis=1)
+	has[">0"] = (signs == 1).astype(np.int).apply(np.sum, axis=1)
+	has = np.clip(has, 0, 1)
+	
+
+	monotonic_temp = pd.DataFrame(bins[pos], columns=["<0","=0",">0"])
+	def monotonic_r(row):
+		_r = None
+		
+		if row["=0"] == 1:
+			_r = [0, 1, 0]
+		elif row["<0"] == 1:
+			_r = [1, 0, 0]
+		else:
+			_r = [0, 0, 1]
+		return pd.Series(_r)
+
+	mono_r = np.sum(monotonic_temp * has.apply(monotonic_r, axis=1).values, axis=1)
+
+
+
+
+	monotonic_temp2 = pd.DataFrame(pos, columns=["<0","=0",">0"])
+	monotonic_temp2["<0"] = pos["<0"] - (pos > 0).astype(np.int)["<0"]
+	monotonic_temp2 = pd.DataFrame(bins[monotonic_temp2], columns=["<0","=0",">0"])
+	
+	monotonic_temp2.loc[np.array([17,18,19],), :]
+
+	def monotonic_l(row):
+		_r = None
+		
+		if row["=0"] == 1:
+			_r = [0, 1, 0]
+		elif row["<0"] == 1:
+			_r = [1, 0, 0]
+		else:
+			_r = [0, 0, 1]
+		return pd.Series(_r)
+
+	mono_l = np.sum(monotonic_temp2 * has.apply(monotonic_l, axis=1).values, axis=1)
+
+
+	values_sign = np.sign(values)
+
+	def bitonic_0(row):
+		_r = None
+		
+		if row["=0"] == 1:
+			_r = mono_r[row_name]
+		else:
+			if values_sign[row.name] == -1:
+				_r = mono_r[row.name]
+			else:
+				_r = mono_l[row.name]
+		return _r
+
+	#bit_0 = np.sum(monotonic_temp2 * has.apply(monotonic_r, axis=1).values, axis=1)
+
+	def bitonic_infinite(row):
+		_r = None
+		
+		if row["=0"] == 1:
+			_r = mono_r[row_name]
+		else:
+			if values_sign[row.name] == -1:
+				_r = mono_l[row.name]
+			else:
+				_r = mono_r[row.name]
+		return _r
+
+	bit_inf = np.sum(monotonic_temp2 * has.apply(monotonic_r, axis=1).values, axis=1)
+
+	return bit_inf
+	#return pd.DataFrame(np.array([mono_r, mono_l, bit_0, bit_inf]).T, columns=["mono_r", "mono_l", "bit_0", "bit_inf"], index=values)
+
+
+
+def calc_discretize(raw_df, bins, column_slice=None, merge_result=True):
+	_r = None
+
+	if column_slice is None:
+		column_slice = raw_df.columns.tolist()
+
+	_r = []
+
+	for col in column_slice:
+		inds_gain = digitize_multitonic(raw_df[col], bins)
+		_r.append(inds_gain.values)
+
+	_r = pd.DataFrame(_r, columns=["discrete_{}".format(x) for x in column_slice])
+
+	if merge_result:
+		_r = pd.concat([raw_df, _r], axis=1);
+
+	return _r
+
+
+

@@ -5,6 +5,7 @@ import pandas as pd
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
 RAW_DATA_PATH = "{}/A_RAW".format(DATA_PATH)
+BASELINE_DATA_PATH = "{}/C_BASELINE".format(DATA_PATH)
 TIER1_DATA_PATH = "{}/B_TIER1".format(DATA_PATH)
 TIER2_DATA_PATH = "{}/C_TIER2".format(DATA_PATH)
 
@@ -291,6 +292,59 @@ def load_tier2_frame(ticker, parseDate=True):
 	_r = None
 	try:
 		_r = pd.read_csv("{}/{}.csv".format(TIER2_DATA_PATH, ticker))
+
+		if parseDate:
+			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
+	except:
+		_r = None
+
+	return _r
+
+def store_baseline_frame(tier1_df, ticker):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	try:
+		tier1_df.to_csv("{}/{}.csv".format(BASELINE_DATA_PATH, ticker), index=False)
+		_r = True
+	except:
+		_r = False
+
+	return _r
+
+
+def load_baseline_frame(ticker, parseDate=True):
+	"""
+		Description:
+			<Description>
+			
+			E.g. : Useful to <...>
+		
+		Parameters:
+			[...]
+
+		Returns : (type)
+		
+		Examples:
+			
+	"""
+
+	_r = None
+	try:
+		_r = pd.read_csv("{}/{}.csv".format(BASELINE_DATA_PATH, ticker))
 
 		if parseDate:
 			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
