@@ -11,6 +11,7 @@ from dateutil import parser as dtparser
 from utils import datafetch
 from utils import vectorized_funs
 from utils import datapipe
+from utils import kerasutil as kutil
 
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
@@ -30,7 +31,10 @@ class FinCapstone():
 				fill_value=1e-128,
 				ticker_list=None,
 				timespan=None,
-				timespan_ab=None):
+				timespan_ab=None,
+				train_from="2010-01-01",
+				train_until="2015-12-31",
+				test_from="2016-01-01"):
 
 		self.ticker_list = None
 		self.timespan = None
@@ -40,6 +44,10 @@ class FinCapstone():
 		self.date_from = date_from
 		self.date_to = date_to
 		self.fill_value = fill_value
+		self.train_from = dtparser.parse(train_from)
+		self.train_until = dtparser.parse(train_until)
+		self.test_from = dtparser.parse(test_from)
+
 
 		self._start = None
 		self._step_i = None
@@ -360,6 +368,38 @@ class FinCapstone():
 		return raw_df
 
 
+
+	def valid_ticker_list(self):
+		return self.provision_validtickerlist()["Symbol"].values
+
+
+
+	def  load_train_eval_baseline(self):
+		results = None
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+
+		results = np.zeros_like(self.valid_ticker_list())
+
+		self.print_verbose_start()
+
+		for idx_ticker, itr_ticker in enumerate(self.valid_ticker_list()):
+			self.print_verbose(itr_ticker)
+
+			itr_df = datafetch.load_baseline_frame(itr_ticker, parseDate=True)
+			itr_df.set_index("Date", inplace=True)
+
+			model = kutil.baseline_binary_model()
+			X_train, y_train, X_test, y_test = kutil.baseline_train_test_split(itr_df, self.train_from, self.train_until, self.test_from)
+			results[idx_ticker] = kutil.baseline_fit_and_eval(model, X_train, y_train, X_test, y_test)
+
+
+
+		self.print_verbose_end()
+
+		return results
 
 
 	## Verbose Helpers
