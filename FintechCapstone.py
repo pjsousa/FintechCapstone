@@ -386,7 +386,7 @@ class FinCapstone():
 		self.print_verbose_start()
 
 		for idx_ticker, itr_ticker in enumerate(self.valid_ticker_list()):
-			self.print_verbose(itr_ticker)
+			self.print_verbose("{}/{} - {}".format(idx_ticker, results.shape[0], itr_ticker))
 
 			itr_df = datafetch.load_baseline_frame(itr_ticker, parseDate=True)
 			itr_df.set_index("Date", inplace=True)
@@ -394,7 +394,6 @@ class FinCapstone():
 			model = kutil.baseline_binary_model()
 			X_train, y_train, X_test, y_test = kutil.baseline_train_test_split(itr_df, self.train_from, self.train_until, self.test_from)
 			results[idx_ticker] = kutil.baseline_fit_and_eval(model, X_train, y_train, X_test, y_test)
-
 
 
 		self.print_verbose_end()
