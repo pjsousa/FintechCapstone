@@ -63,9 +63,16 @@ def baseline_train_test_split(itr_df, train_from, train_until, test_from):
 
 
 def baseline_fit_and_eval(model, X_train, y_train, X_test, y_test):
+	_r = None
 
 	model.fit(X_train, y_train, epochs=2, batch_size=32, verbose=0)
 
 	_eval = model.evaluate(X_test, y_test, verbose=0)
-	return _eval[1]
+
+	try:
+		_r = _eval[1]
+	except:
+		_r = np.nan
+
+	return _r
 
