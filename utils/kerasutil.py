@@ -16,13 +16,17 @@ def baseline_binary_model():
 	model = Sequential()
 	model.add(Dense(4, input_dim=4, kernel_initializer='normal', activation='relu'))
 	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
-	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
-	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
-	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
-	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
-	model.add(Dense(4, kernel_initializer='normal', activation="sigmoid"))
+	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	
+	#output
+	#model.add(Dense(4, kernel_initializer='normal', activation="sigmoid"))
+	model.add(Dense(4, kernel_initializer='normal'))
 	# Compile model
-	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=["accuracy"])
+	#model.compile(loss='binary_crossentropy', optimizer='adam', metrics=["accuracy"])
+	model.compile(loss='mean_squared_error', optimizer='adam')
 	return model
 
 def baseline_train_test_split(features_df, labels_df, train_from, train_until, test_from):
@@ -58,12 +62,9 @@ def baseline_fit_and_eval(model, X_train, y_train, X_test, y_test):
 
 	model.fit(X_train, y_train, epochs=2, batch_size=32, verbose=1)
 
-	_eval = model.evaluate(X_test, y_test, verbose=0)
+	y_pred = model.predict(X_test, verbose=0)
 
-	try:
-		_r = _eval[1]
-	except:
-		_r = np.nan
+	_r = accuracy_score((y_test > 0.0) * 1.0, (y_pred > 0.0) * 1.0)
 
 	return _r
 

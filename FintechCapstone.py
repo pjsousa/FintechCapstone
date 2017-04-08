@@ -419,6 +419,10 @@ class FinCapstone():
 
 			model = kutil.baseline_binary_model()
 			X_train, y_train, X_test, y_test = kutil.baseline_train_test_split(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+
+			# y_test = (y_test > 0) * 1.0
+			# y_train = (y_train > 0) * 1.0
+
 			results[idx_ticker] = kutil.baseline_fit_and_eval(model, X_train, y_train, X_test, y_test)
 
 			model.save_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, itr_ticker))
