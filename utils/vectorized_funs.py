@@ -686,7 +686,7 @@ def calc_discretize(raw_df, bins, column_slice=None, merge_result=True):
 		inds_gain = digitize_multitonic(raw_df[col], bins)
 		_r.append(inds_gain.values)
 
-	_r = pd.DataFrame(_r, columns=["discrete_{}".format(x) for x in column_slice])
+	_r = pd.DataFrame(np.array(_r).T, columns=["discrete_{}".format(x) for x in column_slice])
 
 	if merge_result:
 		_r = pd.concat([raw_df, _r], axis=1);

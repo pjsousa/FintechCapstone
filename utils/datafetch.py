@@ -1,6 +1,8 @@
 import pandas_datareader.data as web
 import datetime
 import pandas as pd
+import io
+import requests
 
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
@@ -8,6 +10,20 @@ RAW_DATA_PATH = "{}/A_RAW".format(DATA_PATH)
 BASELINE_DATA_PATH = "{}/C_BASELINE".format(DATA_PATH)
 TIER1_DATA_PATH = "{}/B_TIER1".format(DATA_PATH)
 TIER2_DATA_PATH = "{}/C_TIER2".format(DATA_PATH)
+
+
+_EXCHANGES = [
+	"nasdaq"
+	#,"nyse"
+	#,"amex"
+]
+
+_URLS = dict()
+_URLS["nasdaq"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=nasdaq&render=download"
+_URLS["nyse"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=nyse&render=download"
+_URLS["amex"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=amex&render=download"
+
+
 
 def fetch_quotes(ticker, from_date=datetime.datetime(1900, 1, 1), to_date=datetime.datetime.now(), source="yahoo"):
 	"""
@@ -32,14 +48,15 @@ def fetch_quotes(ticker, from_date=datetime.datetime(1900, 1, 1), to_date=dateti
 		_r = None
 	return _r
 
-_EXCHANGES = [
-	"amex"
-	,"nasdaq"
-	,"nyse"
-]
+
+def download_companieslist(exchange):
+	url=_URLS[exchange]
+	s=requests.get(url).content
+	c=pd.read_csv(io.StringIO(s.decode('utf-8')))
+	c.to_csv("{}/tickers_{}.csv".format(CONFIG_PATH,exchange), index=False)
 
 
-def load_exchangesinfos(config_path=CONFIG_PATH, verbose=True):
+def load_exchangesinfos(config_path=CONFIG_PATH, verbose=True, exchange=_EXCHANGES):
 	"""
 		Description:
 			<Description>
@@ -58,15 +75,20 @@ def load_exchangesinfos(config_path=CONFIG_PATH, verbose=True):
 	_r = None
 	_rr = []
 	_distinct_count = None
-	_cols_to_use = ["Symbol", "Name", "MarketCap", "Sector", "Industry"]
+	_cols_to_use = ["Symbol", "Name", "LastSale", "MarketCap", "IPOyear", "Sector", "industry", "Summary Quote"]
 
 	
 	## lets load all info files and append them with the exchange name
 	for i, itr in enumerate(_EXCHANGES):
 		itr_path = "{}/tickers_{}.csv".format(config_path,itr)
-		itr_df = pd.read_csv(itr_path, usecols=_cols_to_use)
-		itr_df["exchange"] = itr
-		
+		try:
+			itr_df = pd.read_csv(itr_path, usecols=_cols_to_use)
+			itr_df["exchange"] = itr
+		except:
+			download_companieslist(itr)
+			itr_df = pd.read_csv(itr_path, usecols=_cols_to_use)
+			itr_df["exchange"] = itr
+
 		if verbose:
 			print("{} has {} tickers.".format(itr, itr_df.shape[0]))
 
@@ -107,7 +129,8 @@ def duplicate_tickers(df, ign_exchange=False):
 	_r = pd.DataFrame(dups)
 
 	if ign_exchange:
-		_r["ignoring_exchange"] = _r.duplicated(["Symbol", "Name", "MarketCap", "Sector", "Industry"])
+		_r["ignoring_exchange"] = _r.duplicated(["Symbol", "Name", "LastSale", "MarketCap", "IPOyear", "Sector", "industry", "Summary Quote"])
+
 
 	return _r
 
@@ -300,7 +323,7 @@ def load_tier2_frame(ticker, parseDate=True):
 
 	return _r
 
-def store_baseline_frame(tier1_df, ticker):
+def store_baseline_frame(tier1_df, ticker, baselinepath=BASELINE_DATA_PATH):
 	"""
 		Description:
 			<Description>
@@ -318,7 +341,7 @@ def store_baseline_frame(tier1_df, ticker):
 
 	_r = None
 	try:
-		tier1_df.to_csv("{}/{}.csv".format(BASELINE_DATA_PATH, ticker), index=False)
+		tier1_df.to_csv("{}/{}.csv".format(baselinepath, ticker), index=False)
 		_r = True
 	except:
 		_r = False
@@ -326,7 +349,7 @@ def store_baseline_frame(tier1_df, ticker):
 	return _r
 
 
-def load_baseline_frame(ticker, parseDate=True):
+def load_baseline_frame(ticker, baselinepath=BASELINE_DATA_PATH, parseDate=True):
 	"""
 		Description:
 			<Description>
@@ -344,7 +367,7 @@ def load_baseline_frame(ticker, parseDate=True):
 
 	_r = None
 	try:
-		_r = pd.read_csv("{}/{}.csv".format(BASELINE_DATA_PATH, ticker))
+		_r = pd.read_csv("{}/{}.csv".format(baselinepath, ticker))
 
 		if parseDate:
 			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
