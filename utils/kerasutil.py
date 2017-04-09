@@ -11,12 +11,12 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import accuracy_score
 
 
-def baseline_binary_model():
+def baseline_model():
 	# create model
 	model = Sequential()
 	model.add(Dense(4, input_dim=4, kernel_initializer='normal', activation='relu'))
 	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
-	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
 	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
 	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
 	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))

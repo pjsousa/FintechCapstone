@@ -417,11 +417,8 @@ class FinCapstone():
 			labels_df = self.load_baseline_labels(itr_ticker, parseDate=True)
 			labels_df.set_index("Date", inplace=True)
 
-			model = kutil.baseline_binary_model()
+			model = kutil.baseline_model()
 			X_train, y_train, X_test, y_test = kutil.baseline_train_test_split(features_df, labels_df, self.train_from, self.train_until, self.test_from)
-
-			# y_test = (y_test > 0) * 1.0
-			# y_train = (y_train > 0) * 1.0
 
 			results[idx_ticker] = kutil.baseline_fit_and_eval(model, X_train, y_train, X_test, y_test)
 
