@@ -208,7 +208,7 @@ def load_raw_frame(ticker, tryfetch=True, parseDate=True):
 
 		if parseDate:
 			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
-	except FileNotFoundError:
+	except:
 		if tryfetch:
 			initial_dataload([ticker], False, True)
 			_r = load_raw_frame(ticker, False)

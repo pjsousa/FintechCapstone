@@ -60,7 +60,7 @@ def baseline_train_test_split(features_df, labels_df, train_from, train_until, t
 def baseline_fit_and_eval(model, X_train, y_train, X_test, y_test):
 	_r = None
 
-	model.fit(X_train, y_train, epochs=2, batch_size=32, verbose=1)
+	model.fit(X_train, y_train, epochs=100, batch_size=32, verbose=1)
 
 	y_pred = model.predict(X_test, verbose=0)
 

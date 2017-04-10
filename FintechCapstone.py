@@ -146,7 +146,7 @@ class FinCapstone():
 				work_df = self.calc_baseline_features(itr_df, verbose=True)
 				self.store_baseline_features(work_df, itr_ticker)
 
-				work_df = self.calc_baseline_features(itr_df, verbose=True)
+				work_df = self.calc_baseline_labels(itr_df, verbose=True)
 				self.store_baseline_labels(work_df, itr_ticker)
 			else:
 				itr_df = self.calc_measures_tier1(itr_df, verbose=True)
