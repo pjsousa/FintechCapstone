@@ -372,10 +372,12 @@ def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 		for ts_name in timespan:
 			if ts_name in ["medium_term", "long_term"]:
 				for t in timespan[ts_name]:
+					itr_movingavg = roll_columns(raw_df, "mean", column_slice=[col], window=t, merge_result=False, pad_result=True)
+
 					itr_df = roll_columns(raw_df, "std", column_slice=[col], window=t, merge_result=False, scaler=scaler, pad_result=True)
-					upper_band = itr_df.apply(lambda x: raw_df[col] + x)
-					lower_band = itr_df.apply(lambda x: raw_df[col] - x)
-					
+					upper_band = itr_df.apply(lambda x: itr_movingavg["{}_roll_mean_{}".format(col,t)] + x)
+					lower_band = itr_df.apply(lambda x: itr_movingavg["{}_roll_mean_{}".format(col,t)] - x)
+
 					roll_name = "{}_roll_2std_{}".format(col, t)
 					upper_name = "{}_bollinger_{}_up".format(col, t)
 					lower_name = "{}_bollinger_{}_low".format(col, t)

@@ -186,7 +186,7 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False):
 	return _r
 
 
-def load_raw_frame(ticker, tryfetch=True, parseDate=True):
+def load_raw_frame(ticker, tryfetch=True, parseDate=True, dropAdjClose=False):
 	"""
 		Description:
 			<Description>
@@ -208,6 +208,14 @@ def load_raw_frame(ticker, tryfetch=True, parseDate=True):
 
 		if parseDate:
 			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
+
+		if dropAdjClose:
+			close_ratio = _r["Close"] / _r["Adj Close"]
+			_r["Open"] = _r["Open"] / close_ratio
+			_r["High"] = _r["High"] / close_ratio
+			_r["Low"] = _r["Low"] / close_ratio
+			_r["Close"] = _r["Adj Close"]
+			_r.drop("Adj Close", axis=1, inplace=True)
 	except:
 		if tryfetch:
 			initial_dataload([ticker], False, True)
