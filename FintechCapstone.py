@@ -409,20 +409,23 @@ class FinCapstone():
 		self.print_verbose_start()
 
 		for idx_ticker, itr_ticker in enumerate(self.valid_ticker_list()):
-			self.print_verbose("{}/{} - {}".format(idx_ticker, results.shape[0], itr_ticker))
+			try:
+				self.print_verbose("{}/{} - {}".format(idx_ticker, results.shape[0], itr_ticker))
 
-			features_df = self.load_baseline_features(itr_ticker, parseDate=True)
-			features_df.set_index("Date", inplace=True)
+				features_df = self.load_baseline_features(itr_ticker, parseDate=True)
+				features_df.set_index("Date", inplace=True)
 
-			labels_df = self.load_baseline_labels(itr_ticker, parseDate=True)
-			labels_df.set_index("Date", inplace=True)
+				labels_df = self.load_baseline_labels(itr_ticker, parseDate=True)
+				labels_df.set_index("Date", inplace=True)
+	
+				model = kutil.baseline_model()
+				X_train, y_train, X_test, y_test = kutil.baseline_train_test_split(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
-			model = kutil.baseline_model()
-			X_train, y_train, X_test, y_test = kutil.baseline_train_test_split(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+				results[idx_ticker] = kutil.baseline_fit_and_eval(model, X_train, y_train, X_test, y_test)
 
-			results[idx_ticker] = kutil.baseline_fit_and_eval(model, X_train, y_train, X_test, y_test)
-
-			model.save_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, itr_ticker))
+				model.save_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, itr_ticker))
+			except:
+				print("")
 
 
 		self.print_verbose_end()
