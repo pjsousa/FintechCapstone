@@ -697,3 +697,133 @@ def calc_discretize(raw_df, bins, column_slice=None, merge_result=True):
 
 
 
+def rsiFunc(prices, n=14):
+	deltas = np.diff(prices)
+	seed = deltas[:n+1]
+	up = seed[seed>=0].sum()/n
+	down = -seed[seed<0].sum()/n
+	rs = up/down
+	rsi = np.zeros_like(prices)
+	rsi[:n] = 100.0 - 100./(1. + rs)
+	
+	for i in range(n, len(prices)):
+		delta = deltas[i-1]
+		if delta > 0:
+			upval = delta
+			downval = 0.
+		else:
+			upval = 0.
+			downval = -delta
+		
+		up = (up*(n-1) + upval) / n
+		down = (down*(n-1)+downval)/n
+		
+		rs = up/down
+		rsi[i] = 100. - 100 / (1.+rs)
+	
+	return rsi
+
+
+
+def onbalancevolumeFunc(daily_returns, volume):
+	_r = None
+	
+	_signal = daily_returns.copy()
+	_signal.where(_signal >= 0, -1, inplace=True)
+	_signal.where(_signal < 0, 1, inplace=True)
+	
+	_r = volume * _signal
+
+	return _r.cumsum()
+
+
+
+def ExpMovingAverage(values, window):
+	weights = np.exp(np.linspace(-1., 0., window))
+	weights = weights / weights.sum()
+	a = np.convolve(values, weights, mode="full")[:values.shape[0]]
+	a[:window] = a[window]
+	return a
+
+
+
+def calc_macd(x, slow=26, fast=12):
+	emaslow = ExpMovingAverage(x, slow)
+	emafast = ExpMovingAverage(x, fast)
+	return emaslow, emafast, emafast - emaslow
+
+
+
+def calc_stochasticoscilator(raw_df, window=14):
+	max_hi = raw_df["High"].rolling(window=window).max()
+	min_lo = raw_df["Low"].rolling(window=window).min()
+
+	return (raw_df["Close"] - min_lo) / (max_hi - min_lo) * 100.0
+
+
+
+def calc_adx(raw_df):
+	yesterdayclose = raw_df["Close"].shift(1)
+
+	atr_df = pd.DataFrame()
+	atr_df["H-L"] = raw_df["High"] - raw_df["Low"]
+	atr_df["H-YC"] = np.abs(raw_df["High"] - yesterdayclose)
+	atr_df["L-YC"] = np.abs(raw_df["Low"] - yesterdayclose)
+	atr_df["TR"] = atr_df.max(axis=1)
+	atr = ExpMovingAverage(atr_df["TR"], 14)
+
+	moveup = raw_df["High"] - raw_df["High"].shift(1)
+	movedown = raw_df["Low"].shift(1) - raw_df["Low"]
+
+
+	pdm = moveup.where((moveup <= 0) | (moveup <= movedown), 0)
+	ndm = movedown.where((movedown <= 0) | (movedown <= moveup), 0)
+
+	pdm_ema14 = ExpMovingAverage(pdm, 14)
+	ndm_ema14 = ExpMovingAverage(ndm, 14)
+
+	pdi = (pdm_ema14 / atr) * 100.0
+	ndi = (ndm_ema14 / atr) * 100.0
+
+	adx = 100.0 * ExpMovingAverage(np.abs((pdi - ndi)), 14) / (pdi + ndi)
+	
+	return adx, pdi, ndi
+
+
+
+def time_sincelastmax(windowframe, aroon_df):
+	argmax_h = np.argmax(aroon_df["H"].iloc[windowframe.astype(np.int)])
+	#argmax_date = aroon_df.loc[argmax_h, "Date"]
+	#today_date = aroon_df.loc[windowframe[-1], "Date"]
+	return (windowframe[-1] - argmax_h)
+
+
+
+def time_sincelastmin(windowframe, aroon_df):
+	argmin_h = np.argmin(aroon_df["L"].iloc[windowframe.astype(np.int)])
+	#argmin_date = aroon_df.loc[argmin_h, "Date"]
+	#today_date = aroon_df.loc[windowframe[-1], "Date"]
+	return (windowframe[-1] - argmin_h)
+
+
+
+def calc_aroon(raw_df, window=25):
+
+	aroon_df = pd.DataFrame()
+	aroon_df["Date"]= pd.Series(raw_df.index.tolist())
+	aroon_df["H"] = raw_df["High"].values
+	aroon_df["LAST_H"] = pd.Series(np.arange(aroon_df.shape[0]).astype(np.int32)).rolling(window=window).apply(time_sincelastmax, args=[aroon_df])
+	aroon_df["L"] = raw_df["Low"].values
+	aroon_df["LAST_L"] = pd.Series(np.arange(aroon_df.shape[0]).astype(np.int32)).rolling(window=window).apply(time_sincelastmin, args=[aroon_df])
+	aroon_df["AROON_UP"] = ((window - aroon_df["LAST_H"]) / float(window)) * 100.0
+	aroon_df["AROON_DOWN"] = ((window - aroon_df["LAST_L"]) / float(window)) * 100.0
+	
+	return aroon_df["AROON_UP"], aroon_df["AROON_DOWN"]
+
+
+
+def calc_chaikin_money_flow(raw_df, window=21):
+	window = 21
+	dmf = (((raw_df["Close"] - raw_df["Low"]) - (raw_df["High"] - raw_df["Close"])) / (raw_df["High"] - raw_df["Low"])) * raw_df["Volume"]
+	cmf = dmf.rolling(window=window).mean() / raw_df["Volume"].rolling(window=window).mean()
+	return cmf, dmf

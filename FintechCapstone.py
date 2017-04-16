@@ -23,6 +23,7 @@ RAW_DATA_PATH = "{}/A_RAW".format(DATA_PATH)
 TIER1_DATA_PATH = "{}/B_TIER1".format(DATA_PATH)
 TIER2_DATA_PATH = "{}/C_TIER2".format(DATA_PATH)
 BASELINE_DATA_PATH = "{}/C_BASELINE".format(DATA_PATH)
+TRIALA_DATA_PATH = "{}/D_TRIALA".format(DATA_PATH)
 TINY_FLOAT = 1e-128
 
 class FinCapstone():
@@ -137,10 +138,12 @@ class FinCapstone():
 		for ix, row in ticker_list.iterrows():
 			itr_ticker = row["Symbol"]
 			print("\n\n - {} - \n".format(itr_ticker))
-			itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False)
+			itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=True)
 			
 			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
 			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
+
+			itr_df.set_index("Date", inplace=True)
 
 			if feature_set == "baseline":
 				work_df = self.calc_baseline_features(itr_df, verbose=True)
@@ -148,6 +151,12 @@ class FinCapstone():
 
 				work_df = self.calc_baseline_labels(itr_df, verbose=True)
 				self.store_baseline_labels(work_df, itr_ticker)
+			elif feature_set == "triala":
+				work_df = self.calc_triala_features(itr_df, verbose=True)
+				self.store_triala_features(work_df, itr_ticker)
+
+				work_df = self.calc_triala_labels(itr_df, verbose=True)
+				self.store_triala_labels(work_df, itr_ticker)
 			else:
 				itr_df = self.calc_measures_tier1(itr_df, verbose=True)
 				itr_df = self.calc_measures_tier2(itr_df, verbose=True)
@@ -393,6 +402,104 @@ class FinCapstone():
 
 		return result_df
 
+	def calc_triala_features(self, raw_df, verbose=True):
+		trial_a = pd.DataFrame()
+
+		if verbose:
+			self.print_verbose_start()
+
+		trial_a["SMA_5"] = raw_df["Close"].rolling(window=5).mean()
+		trial_a["SMA_30"] = raw_df["Close"].rolling(window=30).mean()
+		trial_a["SMA_60"] = raw_df["Close"].rolling(window=60).mean()
+		trial_a["SMA_200"] = raw_df["Close"].rolling(window=200).mean()
+
+		if verbose:
+			self.print_verbose("SMAs")
+
+		trial_a["BOLL_5_UP"] = trial_a["SMA_5"] + (2 * raw_df["Close"].rolling(window=5).std())
+		trial_a["BOLL_5_DOWN"] = trial_a["SMA_5"] - (2 * raw_df["Close"].rolling(window=5).std())
+		trial_a["BOLL_30_UP"] = trial_a["SMA_30"] + (2 * raw_df["Close"].rolling(window=30).std())
+		trial_a["BOLL_30_DOWN"] = trial_a["SMA_30"] - (2 * raw_df["Close"].rolling(window=30).std())
+		trial_a["BOLL_60_UP"] = trial_a["SMA_60"] + (2 * raw_df["Close"].rolling(window=60).std())
+		trial_a["BOLL_60_DOWN"] = trial_a["SMA_60"] - (2 * raw_df["Close"].rolling(window=60).std())
+		trial_a["BOLL_200_UP"] = trial_a["SMA_200"] + (2 * raw_df["Close"].rolling(window=200).std())
+		trial_a["BOLL_200_DOWN"] = trial_a["SMA_200"] - (2 * raw_df["Close"].rolling(window=200).std())
+
+		if verbose:
+			self.print_verbose("BOLLINGER")
+
+		emaslow, emafast, macd = vectorized_funs.calc_macd(raw_df["Close"], 26, 12)
+		trial_a["MACD"] = macd
+		trial_a["MACD_EMASLOW"] = emaslow
+		trial_a["MACD_EMAFAST"] = emafast
+
+		if verbose:
+			self.print_verbose("MACD")
+		
+		trial_a["RSI_14"] = vectorized_funs.rsiFunc(raw_df["Close"], 14)
+		trial_a["RSI_21"] = vectorized_funs.rsiFunc(raw_df["Close"], 21)
+		trial_a["RSI_60"] = vectorized_funs.rsiFunc(raw_df["Close"], 60)
+
+		if verbose:
+			self.print_verbose("RSI")
+
+		trial_a["STOCOSCILATOR_14"] = vectorized_funs.calc_stochasticoscilator(raw_df, 14)
+		trial_a["STOCOSCILATOR_14_SMA"] = trial_a["STOCOSCILATOR_14"].rolling(window=3).mean()
+
+		if verbose:
+			self.print_verbose("OSCILATOR")
+		
+		adx, pdi, ndi = vectorized_funs.calc_adx(raw_df)
+		trial_a["ADX"] = adx
+		trial_a["ADX_PDI"] = pdi
+		trial_a["ADX_NDI"] = ndi
+
+		if verbose:
+			self.print_verbose("ADX")
+
+		aroon_up, aroon_down = vectorized_funs.calc_aroon(raw_df, 20)
+		trial_a["AROONUP_20"] = aroon_up.values
+		trial_a["AROONDOWN_20"] = aroon_down.values
+
+		if verbose:
+			self.print_verbose("AROON")
+
+		cmf, dmf = vectorized_funs.calc_chaikin_money_flow(raw_df, window=21)
+		trial_a["CHAIKIN_MFLOW_21"] = cmf
+		trial_a["DAILY_MFLOW_21"] = dmf
+
+		if verbose:
+			self.print_verbose("CMFLOW")
+
+
+		daily_return = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
+
+		trial_a["OBV"] = vectorized_funs.onbalancevolumeFunc(daily_return, raw_df["Volume"])
+
+		if verbose:
+			self.print_verbose("OBV")
+
+		return trial_a
+
+	def calc_triala_labels(self, raw_df, verbose=True):
+		trial_a = pd.DataFrame()
+
+		trial_a["RETURN_1"] = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
+		trial_a["RETURN_30"] = ((raw_df["Close"] / raw_df["Close"].shift(30)) - 1)
+		trial_a["RETURN_60"] = ((raw_df["Close"] / raw_df["Close"].shift(60)) - 1)
+		trial_a["RETURN_200"] = ((raw_df["Close"] / raw_df["Close"].shift(200)) - 1)
+
+		trial_a["RETURN_1"] = trial_a["RETURN_1"].shift(-1)
+		trial_a["RETURN_30"] = trial_a["RETURN_30"].shift(-30)
+		trial_a["RETURN_60"] = trial_a["RETURN_60"].shift(-60)
+		trial_a["RETURN_200"] = trial_a["RETURN_200"].shift(-200)
+
+		if verbose:
+			self.print_verbose("RETURNS")
+			self.print_verbose_end()
+
+		return trial_a
+
 	def valid_ticker_list(self):
 		_r = self.provision_validtickerlist()["Symbol"].values
 		return _r
@@ -469,6 +576,47 @@ class FinCapstone():
 
 		return _r
 
+	def store_triala_features(self, features_df, ticker):
+		features_df.to_csv("{}/{}_triala_X.csv".format(TRIALA_DATA_PATH, ticker))
+		return True
+
+	def load_triala_features(self, ticker, parseDate=True):
+		_r = None
+
+		try:
+			_r = pd.read_csv("{}/{}_triala_X.csv".format(TRIALA_DATA_PATH, ticker))
+
+			if parseDate:
+				_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
+
+		except:
+			_r = None
+
+		return _r
+
+	def store_triala_labels(self, features_df, ticker):
+		features_df.to_csv("{}/{}_triala_Y.csv".format(TRIALA_DATA_PATH, ticker))
+
+		return True
+
+	def load_triala_labels(self, ticker, parseDate=True):
+		_r = None
+
+		try:
+			_r = pd.read_csv("{}/{}_triala_Y.csv".format(TRIALA_DATA_PATH, ticker))
+
+			if parseDate:
+				_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
+
+		except:
+			_r = None
+
+		return _r
+
+
+
+
+
 
 	## Verbose Helpers
 	def reset_verboseclock(self):
@@ -491,7 +639,7 @@ class FinCapstone():
 
 
 def setup():
-	path_list = [ DATA_PATH, RAW_DATA_PATH, TIER1_DATA_PATH, TIER2_DATA_PATH, BASELINE_DATA_PATH, TEMP_PATH, RESULTS_PATH]
+	path_list = [ DATA_PATH, RAW_DATA_PATH, TIER1_DATA_PATH, TIER2_DATA_PATH, BASELINE_DATA_PATH, TRIALA_DATA_PATH, TEMP_PATH, RESULTS_PATH]
 
 	for path in path_list:
 		if not os.path.exists(path):
