@@ -823,7 +823,6 @@ def calc_aroon(raw_df, window=25):
 
 
 def calc_chaikin_money_flow(raw_df, window=21):
-	window = 21
 	dmf = (((raw_df["Close"] - raw_df["Low"]) - (raw_df["High"] - raw_df["Close"])) / (raw_df["High"] - raw_df["Low"])) * raw_df["Volume"]
 	cmf = dmf.rolling(window=window).mean() / raw_df["Volume"].rolling(window=window).mean()
 	return cmf, dmf

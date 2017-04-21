@@ -1,0 +1,9 @@
+TEMP_PATH = "../dumpbank/FintechCapstone"
+CONFIG_PATH = "./config"
+RESULTS_PATH = "./results"
+DATA_PATH = "./data"
+RAW_DATA_PATH = "{}/A_RAW".format(DATA_PATH)
+TIER1_DATA_PATH = "{}/B_TIER1".format(DATA_PATH)
+TIER2_DATA_PATH = "{}/C_TIER2".format(DATA_PATH)
+BASELINE_DATA_PATH = "{}/C_BASELINE".format(DATA_PATH)
+TRIALA_DATA_PATH = "{}/D_TRIALA".format(DATA_PATH)

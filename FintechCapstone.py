@@ -9,21 +9,15 @@ from functools import partial
 from dateutil import parser as dtparser
 
 from utils import datafetch
-from utils import vectorized_funs
 from utils import datapipe
-from utils import kerasutil as kutil
+from utils import baseline_model
+from utils import scenarioa
+from utils import paths_helper as paths
+
 import argparse
 import os
 
-TEMP_PATH = "../dumpbank/FintechCapstone"
-CONFIG_PATH = "./config"
-RESULTS_PATH = "./results"
-DATA_PATH = "./data"
-RAW_DATA_PATH = "{}/A_RAW".format(DATA_PATH)
-TIER1_DATA_PATH = "{}/B_TIER1".format(DATA_PATH)
-TIER2_DATA_PATH = "{}/C_TIER2".format(DATA_PATH)
-BASELINE_DATA_PATH = "{}/C_BASELINE".format(DATA_PATH)
-TRIALA_DATA_PATH = "{}/D_TRIALA".format(DATA_PATH)
+
 TINY_FLOAT = 1e-128
 
 class FinCapstone():
@@ -143,24 +137,22 @@ class FinCapstone():
 			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
 			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
 
-			itr_df.set_index("Date", inplace=True)
 
 			if feature_set == "baseline":
-				work_df = self.calc_baseline_features(itr_df, verbose=True)
+				work_df = baseline_model.calc_features(itr_df,verbose=True)
 				self.store_baseline_features(work_df, itr_ticker)
 
-				work_df = self.calc_baseline_labels(itr_df, verbose=True)
+				work_df = baseline_model.calc_labels(itr_df, self.timespan, verbose=True)
 				self.store_baseline_labels(work_df, itr_ticker)
-			elif feature_set == "triala":
-				work_df = self.calc_triala_features(itr_df, verbose=True)
-				self.store_triala_features(work_df, itr_ticker)
+			elif feature_set == "scenarioa":
+				itr_df.set_index("Date", inplace=True)
+				work_df = scenarioa.calc_features(itr_df, normalize=True, verbose=True)
+				self.store_scenarioa_features(work_df, itr_ticker)
 
-				work_df = self.calc_triala_labels(itr_df, verbose=True)
-				self.store_triala_labels(work_df, itr_ticker)
+				work_df = scenarioa.calc_labels(itr_df, verbose=True)
+				self.store_scenarioa_labels(work_df, itr_ticker)
 			else:
-				itr_df = self.calc_measures_tier1(itr_df, verbose=True)
-				itr_df = self.calc_measures_tier2(itr_df, verbose=True)
-				datafetch.store_tier2_frame(itr_df, itr_ticker)
+				print("Invalid Feature Set.")
 
 	def split_tickerlist(self, n_splits=4):
 		ticker_list = pd.read_csv(self.PATH_DATALOAD_RESULT)
@@ -178,333 +170,11 @@ class FinCapstone():
 
 			itr_ticker_list.to_csv(itr_path, index=False)
 
-	def calc_measures_tier1(self, raw_df, verbose=True):
-		"""
-			Description:
-				<Description>
-				
-				E.g. : Useful to <...>
-			
-			Parameters:
-				[...]
-
-			Returns : (type)
-			
-			Examples:
-				
-		"""
-
-		timespan = None
-		timespan = self.timespan
-
-		if verbose:
-			self.print_verbose_start()
-
-
-
-		## SMAs
-		raw_df = vectorized_funs.calc_sma(raw_df, timespan, ["Close", "Volume", "High", "Low", "Open"], merge_result=True);
-
-		if verbose:
-			self.print_verbose("SMA")
-
-
-
-		## RETURNs
-		raw_df = vectorized_funs.calc_return(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
-
-		shift_backcols = list(filter(lambda x: ("return" in x) and ("Close" in x)  , raw_df.columns.tolist()))
-		for col in shift_backcols:
-			_timewindows = [int(s) for s in col.split("_") if s.isdigit()]
-			raw_df[col] = raw_df[col].shift(_timewindows[0] * -1)
-
-		if verbose:
-			self.print_verbose("RETURNS")
-
-
-
-		## DIFF MOVEs
-		raw_df = vectorized_funs.calc_diff_moves(raw_df, timespan=timespan, column_slice=["Close", "High", "Low", "Volume"], merge_result=True)
-
-		if verbose:
-			self.print_verbose("DIFF MOVE")
-
-
-
-		## BOLLINGER BANDs
-		raw_df = vectorized_funs.calc_bollinger(raw_df, timespan, ["Close", "Volume"], merge_result=True, scaler=2)
-
-		if verbose:
-			self.print_verbose("BOLLINGER")
-
-
-		timespan = self.timespan_ab
-
-		## ALPHAs  - THIS COULD BE OPTIMIZED : http://gouthamanbalaraman.com/blog/calculating-stock-beta.html
-		## +
-		## BETAs  - THIS COULD BE OPTIMIZED : http://stackoverflow.com/a/39503417
-		sp500 = datafetch.load_raw_frame("^GSPC")
-
-		for tterm in timespan:
-			for t in timespan[tterm]:
-				raw_df = vectorized_funs.timewindow_alphabeta(raw_df, sp500, ["Close", "High", "Low"], t, merge_result=True)
-
-		if verbose:
-			self.print_verbose("ALPHABETA")
-			#self.print_verbose_end()
-
-		return raw_df
-
-	def calc_measures_tier2(self, raw_df, verbose=True):
-		"""
-			Description:
-				<Description>
-				
-				E.g. : Useful to <...>
-			
-			Parameters:
-				[...]
-
-			Returns : (type)
-			
-			Examples:
-				
-		"""
-
-		timespan = None
-		timespan = self.timespan
-
-
-		## AFTERMARKET DIFF
-		raw_df = vectorized_funs.calc_aftermarket_diff(raw_df, fillna=True, merge_result=True);
-
-		if verbose:
-			self.print_verbose("AM DIFF")
-
-
-
-		## AFTERMARKET RETURNs
-		raw_df = vectorized_funs.calc_aftermarket_return(raw_df, fillna=True, merge_result=True)
-
-		if verbose:
-			self.print_verbose("AM RETURNS")
-
-
-
-		## AFTERMARKET RETURNS SMA
-		raw_df = vectorized_funs.calc_aftermarket_sma(raw_df, timespan=timespan, merge_result=True)
-
-		if verbose:
-			self.print_verbose("AM SMA")
-
-
-
-		## AFTERMARKET RETURNS BOLLINGER
-		raw_df = vectorized_funs.calc_aftermarket_bollinger(raw_df, timespan, merge_result=True)
-
-		if verbose:
-			self.print_verbose("AM BOLLINGER")
-
-
-
-		## INTRADAY HIGH-LOW DIFFERENCE
-		raw_df = vectorized_funs.calc_highlow_diff(raw_df, merge_result=True)
-
-		if verbose:
-			self.print_verbose("HL DIFF")
-
-
-
-		## INTRADAY CLOSE-LOW DIFFERENCE
-		raw_df = vectorized_funs.calc_closelow_diff(raw_df, merge_result=True)
-
-		if verbose:
-			self.print_verbose("CL DIFF")
-
-
-
-		## INTRADAY CLOSE-HIGH DIFFERENCE
-		raw_df = vectorized_funs.calc_closehigh_diff(raw_df, merge_result=True)
-
-		if verbose:
-			self.print_verbose("CH DIFF")
-
-
-
-		if verbose:
-			self.print_verbose_end()
-
-		return raw_df
-
-	def calc_baseline_features(self, raw_df, verbose=True):
-		timespan = None
-		work_df = None
-		result_df = None
-
-		if verbose:
-			self.print_verbose_start()
-
-		result_df = pd.DataFrame()
-		result_df["Date"] = raw_df["Date"]
-
-		## NORMALIZE
-		
-		timespan = {
-			"short_term": [1]
-			,"medium_term": []
-			,"long_term": []
-		}
-
-		work_df = vectorized_funs.calc_return(raw_df, timespan=timespan, column_slice=["Open", "High", "Low", "Volume"], merge_result=False)
-		result_df = pd.concat([result_df, work_df], axis=1);
-
-
-		if verbose:
-			self.print_verbose_end()
-
-		return result_df
-
-	def calc_baseline_labels(self, raw_df, verbose=True):
-		timespan = None
-		work_df = None
-		result_df = None
-
-		if verbose:
-			self.print_verbose_start()
-
-		result_df = pd.DataFrame()
-		result_df["Date"] = raw_df["Date"]
-
-		## NORMALIZE
-		
-		timespan = {
-			"short_term": [1]
-			,"medium_term": []
-			,"long_term": []
-		}
-
-		## RETURNs
-		timespan = self.timespan
-		work_df = vectorized_funs.calc_return(raw_df, timespan=timespan, column_slice=["Close"], merge_result=False)
-		result_df = pd.concat([result_df, work_df], axis=1);
-
-		## Shift returns
-		shift_backcols = list(filter(lambda x: ("return" in x) and ("Close" in x)  , result_df.columns.tolist()))
-		for col in shift_backcols:
-			_timewindows = [int(s) for s in col.split("_") if s.isdigit()]
-			result_df[col] = result_df[col].shift(_timewindows[0] * -1)
-
-		if verbose:
-			self.print_verbose("RETURNS")
-
-		if verbose:
-			self.print_verbose_end()
-
-		return result_df
-
-	def calc_triala_features(self, raw_df, verbose=True):
-		trial_a = pd.DataFrame()
-
-		if verbose:
-			self.print_verbose_start()
-
-		trial_a["SMA_5"] = raw_df["Close"].rolling(window=5).mean()
-		trial_a["SMA_30"] = raw_df["Close"].rolling(window=30).mean()
-		trial_a["SMA_60"] = raw_df["Close"].rolling(window=60).mean()
-		trial_a["SMA_200"] = raw_df["Close"].rolling(window=200).mean()
-
-		if verbose:
-			self.print_verbose("SMAs")
-
-		trial_a["BOLL_5_UP"] = trial_a["SMA_5"] + (2 * raw_df["Close"].rolling(window=5).std())
-		trial_a["BOLL_5_DOWN"] = trial_a["SMA_5"] - (2 * raw_df["Close"].rolling(window=5).std())
-		trial_a["BOLL_30_UP"] = trial_a["SMA_30"] + (2 * raw_df["Close"].rolling(window=30).std())
-		trial_a["BOLL_30_DOWN"] = trial_a["SMA_30"] - (2 * raw_df["Close"].rolling(window=30).std())
-		trial_a["BOLL_60_UP"] = trial_a["SMA_60"] + (2 * raw_df["Close"].rolling(window=60).std())
-		trial_a["BOLL_60_DOWN"] = trial_a["SMA_60"] - (2 * raw_df["Close"].rolling(window=60).std())
-		trial_a["BOLL_200_UP"] = trial_a["SMA_200"] + (2 * raw_df["Close"].rolling(window=200).std())
-		trial_a["BOLL_200_DOWN"] = trial_a["SMA_200"] - (2 * raw_df["Close"].rolling(window=200).std())
-
-		if verbose:
-			self.print_verbose("BOLLINGER")
-
-		emaslow, emafast, macd = vectorized_funs.calc_macd(raw_df["Close"], 26, 12)
-		trial_a["MACD"] = macd
-		trial_a["MACD_EMASLOW"] = emaslow
-		trial_a["MACD_EMAFAST"] = emafast
-
-		if verbose:
-			self.print_verbose("MACD")
-		
-		trial_a["RSI_14"] = vectorized_funs.rsiFunc(raw_df["Close"], 14)
-		trial_a["RSI_21"] = vectorized_funs.rsiFunc(raw_df["Close"], 21)
-		trial_a["RSI_60"] = vectorized_funs.rsiFunc(raw_df["Close"], 60)
-
-		if verbose:
-			self.print_verbose("RSI")
-
-		trial_a["STOCOSCILATOR_14"] = vectorized_funs.calc_stochasticoscilator(raw_df, 14)
-		trial_a["STOCOSCILATOR_14_SMA"] = trial_a["STOCOSCILATOR_14"].rolling(window=3).mean()
-
-		if verbose:
-			self.print_verbose("OSCILATOR")
-		
-		adx, pdi, ndi = vectorized_funs.calc_adx(raw_df)
-		trial_a["ADX"] = adx
-		trial_a["ADX_PDI"] = pdi
-		trial_a["ADX_NDI"] = ndi
-
-		if verbose:
-			self.print_verbose("ADX")
-
-		aroon_up, aroon_down = vectorized_funs.calc_aroon(raw_df, 20)
-		trial_a["AROONUP_20"] = aroon_up.values
-		trial_a["AROONDOWN_20"] = aroon_down.values
-
-		if verbose:
-			self.print_verbose("AROON")
-
-		cmf, dmf = vectorized_funs.calc_chaikin_money_flow(raw_df, window=21)
-		trial_a["CHAIKIN_MFLOW_21"] = cmf
-		trial_a["DAILY_MFLOW_21"] = dmf
-
-		if verbose:
-			self.print_verbose("CMFLOW")
-
-
-		daily_return = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
-
-		trial_a["OBV"] = vectorized_funs.onbalancevolumeFunc(daily_return, raw_df["Volume"])
-
-		if verbose:
-			self.print_verbose("OBV")
-
-		return trial_a
-
-	def calc_triala_labels(self, raw_df, verbose=True):
-		trial_a = pd.DataFrame()
-
-		trial_a["RETURN_1"] = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
-		trial_a["RETURN_30"] = ((raw_df["Close"] / raw_df["Close"].shift(30)) - 1)
-		trial_a["RETURN_60"] = ((raw_df["Close"] / raw_df["Close"].shift(60)) - 1)
-		trial_a["RETURN_200"] = ((raw_df["Close"] / raw_df["Close"].shift(200)) - 1)
-
-		trial_a["RETURN_1"] = trial_a["RETURN_1"].shift(-1)
-		trial_a["RETURN_30"] = trial_a["RETURN_30"].shift(-30)
-		trial_a["RETURN_60"] = trial_a["RETURN_60"].shift(-60)
-		trial_a["RETURN_200"] = trial_a["RETURN_200"].shift(-200)
-
-		if verbose:
-			self.print_verbose("RETURNS")
-			self.print_verbose_end()
-
-		return trial_a
-
 	def valid_ticker_list(self):
 		_r = self.provision_validtickerlist()["Symbol"].values
 		return _r
 
-	def load_train_eval_baseline(self):
+	def train_baseline(self, nb_epoch=100):
 		results = None
 		X_train = None
 		y_train = None
@@ -525,31 +195,48 @@ class FinCapstone():
 				labels_df = self.load_baseline_labels(itr_ticker, parseDate=True)
 				labels_df.set_index("Date", inplace=True)
 	
-				model = kutil.baseline_model()
-				X_train, y_train, X_test, y_test = kutil.baseline_train_test_split(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+				model = baseline_model.create_model()
+				X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
-				results[idx_ticker] = kutil.baseline_fit_and_eval(model, X_train, y_train, X_test, y_test)
+				baseline_model.fit(model, X_train, y_train, X_test, y_test, nb_epoch)
 
-				model.save_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, itr_ticker))
+				results[idx_ticker] = baseline_model.evaluate(model, X_test, y_test)
+
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, itr_ticker))
 			except:
 				print("")
 
 
 		self.print_verbose_end()
 
-		return results
+		return pd.DataFrame(data=results, index=self.valid_ticker_list())
+
+	def predict_baseline(self, ticker):
+		features_df = self.load_baseline_features(ticker, parseDate=True)
+		features_df.set_index("Date", inplace=True)
+
+		labels_df = self.load_baseline_labels(ticker, parseDate=True)
+		labels_df.set_index("Date", inplace=True)
+
+		model = baseline_model.create_model()
+		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+		model.load_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, ticker))
+
+		y_pred = model.predict(X_test, verbose=0)
+
+		return y_pred
 
 
 	## Storage Helpers
 	def store_baseline_features(self, features_df, ticker):
-		features_df.to_csv("{}/{}_baseline_X.csv".format(BASELINE_DATA_PATH, ticker), index=False)
+		features_df.to_csv("{}/{}_baseline_X.csv".format(paths.BASELINE_DATA_PATH, ticker), index=False)
 		return True
 
 	def load_baseline_features(self, ticker, parseDate=True):
 		_r = None
 
 		try:
-			_r = pd.read_csv("{}/{}_baseline_X.csv".format(BASELINE_DATA_PATH, ticker))
+			_r = pd.read_csv("{}/{}_baseline_X.csv".format(paths.BASELINE_DATA_PATH, ticker))
 
 			if parseDate:
 				_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
@@ -559,7 +246,7 @@ class FinCapstone():
 		return _r
 
 	def store_baseline_labels(self, features_df, ticker):
-		features_df.to_csv("{}/{}_baseline_Y.csv".format(BASELINE_DATA_PATH, ticker), index=False)
+		features_df.to_csv("{}/{}_baseline_Y.csv".format(paths.BASELINE_DATA_PATH, ticker), index=False)
 
 		return True
 
@@ -567,56 +254,31 @@ class FinCapstone():
 		_r = None
 
 		try:
-			_r = pd.read_csv("{}/{}_baseline_Y.csv".format(BASELINE_DATA_PATH, ticker))
+			_r = pd.read_csv("{}/{}_baseline_Y.csv".format(paths.BASELINE_DATA_PATH, ticker))
 
 			if parseDate:
 				_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
-		except:
+		except e:
 			_r = None
+
 
 		return _r
 
-	def store_triala_features(self, features_df, ticker):
-		features_df.to_csv("{}/{}_triala_X.csv".format(TRIALA_DATA_PATH, ticker))
-		return True
+	def store_scenarioa_features(self, features_df, ticker):
+		
+		return scenarioa.store_scenarioa_features(features_df, ticker)
 
-	def load_triala_features(self, ticker, parseDate=True):
-		_r = None
+	def load_scenarioa_features(self, ticker, parseDate=True):
+		
+		return scenarioa.load_scenarioa_features(features_df, ticker)
 
-		try:
-			_r = pd.read_csv("{}/{}_triala_X.csv".format(TRIALA_DATA_PATH, ticker))
+	def store_scenarioa_labels(self, features_df, ticker):
+		
+		return scenarioa.store_scenarioa_labels(features_df, ticker)
 
-			if parseDate:
-				_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
-
-		except:
-			_r = None
-
-		return _r
-
-	def store_triala_labels(self, features_df, ticker):
-		features_df.to_csv("{}/{}_triala_Y.csv".format(TRIALA_DATA_PATH, ticker))
-
-		return True
-
-	def load_triala_labels(self, ticker, parseDate=True):
-		_r = None
-
-		try:
-			_r = pd.read_csv("{}/{}_triala_Y.csv".format(TRIALA_DATA_PATH, ticker))
-
-			if parseDate:
-				_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
-
-		except:
-			_r = None
-
-		return _r
-
-
-
-
-
+	def load_scenarioa_labels(self, ticker, parseDate=True):
+		
+		return scenarioa.load_scenarioa_labels(features_df, ticker)
 
 	## Verbose Helpers
 	def reset_verboseclock(self):
@@ -639,7 +301,7 @@ class FinCapstone():
 
 
 def setup():
-	path_list = [ DATA_PATH, RAW_DATA_PATH, TIER1_DATA_PATH, TIER2_DATA_PATH, BASELINE_DATA_PATH, TRIALA_DATA_PATH, TEMP_PATH, RESULTS_PATH]
+	path_list = [ paths.DATA_PATH, paths.RAW_DATA_PATH, paths.TIER1_DATA_PATH, paths.TIER2_DATA_PATH, paths.BASELINE_DATA_PATH, paths.TRIALA_DATA_PATH, paths.TEMP_PATH, paths.RESULTS_PATH]
 
 	for path in path_list:
 		if not os.path.exists(path):
@@ -667,7 +329,7 @@ def dump_config(config_name):
 		["feature_set", "baseline"]
 	]
 
-	config_path = "{}/{}.cfg".format(CONFIG_PATH, config_name)
+	config_path = "{}/{}.cfg".format(paths.CONFIG_PATH, config_name)
 
 	pd.DataFrame(default_config, columns=["param", "value"]).to_csv(config_path, index=False, sep=":")
 
