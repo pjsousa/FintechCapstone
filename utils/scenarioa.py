@@ -149,7 +149,7 @@ def calc_labels(raw_df, verbose=True):
 
 
 
-def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, test_from, normalize=True, return_type="pandas"):
+def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, test_from, return_type="pandas"):
 	X_train_dict = dict()
 	y_train_df = dict()
 	X_test_dict = dict()
@@ -284,7 +284,7 @@ def fit(model, X_train, y_train, nb_epoch=2):
 	y_train = y_train.values
 
 	## Create a new dimension for the "channel"
-	X_train.reshape(X_train.shape[0], 1, X_train.shape[1], X_train.shape[2])
+	X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1], X_train.shape[2])
 
 	## Fit
 	model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=32, verbose=1)
