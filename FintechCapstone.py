@@ -270,7 +270,7 @@ class FinCapstone():
 
 	def load_scenarioa_features(self, ticker, parseDate=True):
 		
-		return scenarioa.load_scenarioa_features(features_df, ticker)
+		return scenarioa.load_scenarioa_features(ticker, parseDate)
 
 	def store_scenarioa_labels(self, features_df, ticker):
 		
@@ -278,7 +278,7 @@ class FinCapstone():
 
 	def load_scenarioa_labels(self, ticker, parseDate=True):
 		
-		return scenarioa.load_scenarioa_labels(features_df, ticker)
+		return scenarioa.load_scenarioa_labels(ticker, parseDate)
 
 	## Verbose Helpers
 	def reset_verboseclock(self):
