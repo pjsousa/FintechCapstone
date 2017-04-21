@@ -253,7 +253,7 @@ def normalize_features(features_df):
 def create_model():
 	model = Sequential()
 
-	model.add(Convolution2D(64, 3, 3, input_shape=(1, 29, 3), activation="relu", dim_ordering="th"))
+	model.add(Convolution2D(64, 3, 3, input_shape=(1, 29, 3), activation="relu"))
 	kutils.ConvBlock(1, 64, model, add_maxpooling=False)
 	kutils.ConvBlock(2, 128, model, add_maxpooling=False)
 	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
@@ -263,9 +263,9 @@ def create_model():
 	
 	model.add(Flatten())
 
-	kutils.FCBlock(model)
-	kutils.FCBlock(model)
-	kutils.FCBlock(model)
+	kutils.FCBlock(model, add_batchnorm=True)
+	kutils.FCBlock(model, add_batchnorm=True)
+	kutils.FCBlock(model, add_batchnorm=True)
 
 	model.add(Dense(4, init='normal'))
 
