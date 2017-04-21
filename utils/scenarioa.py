@@ -117,6 +117,8 @@ def calc_features(raw_df, verbose=True, normalize=False):
 	result_df["OBV"] = vectorized_funs.onbalancevolumeFunc(daily_return, raw_df["Volume"])
 
 	if normalize:
+		result_df.where(~np.isnan(result_df), 0.0, inplace=True)
+		result_df.where(-np.isinf(result_df), 0.0, inplace=True)
 		result_df = normalize_features(result_df)
 
 	# if verbose:
@@ -162,12 +164,6 @@ def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, te
 		## Load Features
 		itr_df = load_scenarioa_features(itr_ticker, parseDate=True)
 		itr_df.set_index("Date", inplace=True)
-
-		# Normalize Features
-		if normalize:
-			itr_df.where(~np.isnan(itr_df), 0.0, inplace=True)
-			itr_df.where(-np.isinf(itr_df), 0.0, inplace=True)
-			normalize_features(itr_df)
 
 		# Split Features into Train and Test
 		X_train_dict[itr_ticker] = itr_df.loc[train_from:train_until, :]
