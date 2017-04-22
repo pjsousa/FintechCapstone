@@ -24,6 +24,7 @@ class FinCapstone():
 
 	def __init__(self,
 				model_name="ExampleFintech",
+				reset_status=False,
 				ticker_list_samplesize=100,
 				path_dataload_result="RES_initial_dataload.csv",
 				path_ticker_list=None,
@@ -36,7 +37,7 @@ class FinCapstone():
 				train_from="2010-01-01",
 				train_until="2015-12-31",
 				test_from="2016-01-01",
-				bins=None):
+				bins=None,):
 
 		self.ticker_list = None
 		self.timespan = None
@@ -51,6 +52,10 @@ class FinCapstone():
 		self.train_until = dtparser.parse(train_until)
 		self.test_from = dtparser.parse(test_from)
 		self.model_name = model_name
+		
+		self.fetchstatus_df = None
+		self.featureengineer_status_df = None
+		self.train_status_df = None
 
 
 		self._start = None
@@ -86,6 +91,11 @@ class FinCapstone():
 			self.bins = np.array([-100, -20, -10, -5, -1, 1, 5, 10, 20, 100]).astype("float32")
 		else:
 			self.bins = np.array(bins).astype("float32")
+
+		if reset_status:
+			self.reset_status_files()
+		else:
+			self.load_status_files()
 
 
 	def provision_fulltickerlist(self):
@@ -246,7 +256,7 @@ class FinCapstone():
 
 
 				model = scenarioa.create_model(n_tickers)
-				X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(itr_ticker, trial.valid_ticker_list(), trial.train_from, trial.train_until, trial.test_from, True, "numpy")
+				X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(itr_ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 				scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
 
 				results[idx_ticker] = scenarioa.evaluate(model, X_test, y_test, X_train)
@@ -261,19 +271,85 @@ class FinCapstone():
 		return pd.DataFrame(data=results, index=self.valid_ticker_list())
 
 	def predict_scenarioa(self, ticker):
-		features_df = self.load_baseline_features(ticker, parseDate=True)
-		features_df.set_index("Date", inplace=True)
+		model = scenarioa.create_model(n_tickers)
+		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(itr_ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
+		scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
 
-		labels_df = self.load_baseline_labels(ticker, parseDate=True)
-		labels_df.set_index("Date", inplace=True)
-
-		model = baseline_model.create_model()
-		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
-		model.load_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, ticker))
+		model.load_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "scenario", self.model_name, ticker))
 
 		y_pred = model.predict(X_test, verbose=0)
 
 		return y_pred
+
+
+	##Status Files
+	def reset_status_files(self):
+		data = {
+			"date_from": "2000-01-01"
+			,"date_to": "2016-12-31"
+			,"train_from": "2016-12-31"
+			,"train_until": "2016-12-31"
+			,"test_from": "2016-12-31"
+			,"model_name": "alpha_3"
+			,"scenario": "baselone"
+			,"fetch_status": "INCOMPLETE"
+			,"featureengineer_status": "INCOMPLETE"
+			,"modeltrain_status": "INCOMPLETE"
+		}
+
+		trialconfig_df = pd.DataFrame.from_dict(data, orient='index')
+		trialconfig_df.columns = pd.Index(["value"])
+
+		fetchstatus_df = pd.DataFrame()
+		fetchstatus_df["ticker"] = self.ticker_list
+		fetchstatus_df["status"] = "INCOMPLETE"
+		fetchstatus_df["start"] = None
+		fetchstatus_df["end"] = None
+		fetchstatus_df["msg"] = None
+		fetchstatus_df.set_index("ticker", inplace=True)
+
+
+		featureengineer_status_df = pd.DataFrame()
+		featureengineer_status_df["ticker"] = self.ticker_list
+		featureengineer_status_df["status"] = "INCOMPLETE"
+		featureengineer_status_df["start"] = None
+		featureengineer_status_df["end"] = None
+		featureengineer_status_df["msg"] = None
+		featureengineer_status_df.set_index("ticker", inplace=True)
+
+
+		train_status_df = pd.DataFrame()
+		train_status_df["ticker"] = self.ticker_list
+		train_status_df["epochs"] = 0
+		train_status_df["status"] = "INCOMPLETE"
+		train_status_df["start"] = None
+		train_status_df["end"] = None
+		train_status_df["msg"] = None
+		train_status_df["loss"] = None
+		train_status_df.set_index("ticker", inplace=True)
+
+		self.trialconfig_df = trialconfig_df
+		self.fetchstatus_df = fetchstatus_df
+		self.featureengineer_status_df = featureengineer_status_df
+		self.train_status_df = train_status_df
+
+
+	def store_status_files(self):
+		self.trialconfig_df.to_csv("{}_trialconfig.tmp".format(self.model_name))
+		self.fetchstatus_df.to_csv("{}_fetchstatus.tmp".format(self.model_name))
+		self.featureengineer_status_df.to_csv("{}_featureengineer_status.tmp".format(self.model_name))
+		self.train_status_df.to_csv("{}_train_status.tmp".format(self.model_name))
+
+	def load_status_files(self):
+		self.trialconfig_df = pd.read_csv("{}_trialconfig.tmp".format(self.model_name))
+		self.fetchstatus_df = pd.read_csv("{}_fetchstatus.tmp".format(self.model_name))
+		self.featureengineer_status_df = pd.read_csv("{}_featureengineer_status.tmp".format(self.model_name))
+		self.train_status_df = pd.read_csv("{}_train_status.tmp".format(self.model_name))
+
+		self.fetchstatus_df.set_index("ticker", inplace=True)
+		self.featureengineer_status_df.set_index("ticker", inplace=True)
+		self.train_status_df.set_index("ticker", inplace=True)
+
 
 	## Storage Helpers
 	def store_baseline_features(self, features_df, ticker):
