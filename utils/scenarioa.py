@@ -149,7 +149,7 @@ def calc_labels(raw_df, verbose=True):
 
 
 
-def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, test_from, return_type="pandas"):
+def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, test_from, normalize=True, return_type="pandas"):
 	X_train_dict = dict()
 	y_train_df = dict()
 	X_test_dict = dict()
@@ -187,6 +187,10 @@ def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, te
 	y_train_df = itr_df.loc[train_from:train_until, :]
 	y_test_df = itr_df.loc[test_from:, :]
 
+	## Normalize Close
+	if normalize:
+		X_train_pnl.loc[:,"Close",:] = X_train_pnl.loc[:,"Close",:] / X_train_pnl.loc[:,"Close",:].max().max()
+		X_test_pnl.loc[:,"Close",:] = X_test_pnl.loc[:,"Close",:] / X_train_pnl.loc[:,"Close",:].max().max()
 
 	# Prepare output when necessary
 	if return_type == "numpy":
@@ -243,6 +247,11 @@ def normalize_features(features_df):
 
 	result_df["OBV"] = features_df["OBV"] / result_df["Close"]
 
+	## Let's clean again the nan and inf 
+	#  Because Some indicators might be 0.0 and produce Inf when they are on the denominator.
+	result_df.where(~np.isnan(result_df), 0.0, inplace=True)
+	result_df.where(-np.isinf(result_df), 0.0, inplace=True)
+
 	assert np.sum(~features_df.columns.to_series().isin(result_df.columns.to_series())) == 0, \
 		"result_df and features_df must have the same column set"
 
@@ -258,8 +267,8 @@ def create_model():
 	kutils.ConvBlock(2, 128, model, add_maxpooling=False)
 	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
 
-	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
-	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
+	# kutils.ConvBlock(3, 512, model, add_maxpooling=False)
+	# kutils.ConvBlock(3, 512, model, add_maxpooling=False)
 	
 	model.add(Flatten())
 
@@ -275,13 +284,8 @@ def create_model():
 
 
 
-def fit(model, X_train, y_train, nb_epoch=2):
+def fit(model, X_train, y_train, nb_epoch=1):
 
-	## Normalize Close
-	X_train.loc[:,"Close",:] = X_train.loc[:,"Close",:] / X_train.loc[:,"Close",:].max().max()
-
-	X_train = X_train.values
-	y_train = y_train.values
 
 	## Create a new dimension for the "channel"
 	X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1], X_train.shape[2])
@@ -295,9 +299,6 @@ def fit(model, X_train, y_train, nb_epoch=2):
 def evaluate(model, X_test, y_test, X_train):
 	_r = None
 
-	X_test.loc[:,"Close",:] = X_test.loc[:,"Close",:] / X_train.loc[:,"Close",:].max().max()
-	X_test = X_test.values
-	y_test = y_test.values
 
 	X_test.reshape(X_test.shape[0], 1, X_test.shape[1], X_test.shape[2])
 
