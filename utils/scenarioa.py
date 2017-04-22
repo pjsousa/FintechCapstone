@@ -259,10 +259,10 @@ def normalize_features(features_df):
 
 
 
-def create_model():
+def create_model(n_tickers):
 	model = Sequential()
 
-	model.add(Convolution2D(64, 3, 3, input_shape=(1, 29, 3), activation="relu"))
+	model.add(Convolution2D(64, 3, 3, input_shape=(1, 29, n_tickers), activation="relu"))
 	kutils.ConvBlock(1, 64, model, add_maxpooling=False)
 	kutils.ConvBlock(2, 128, model, add_maxpooling=False)
 	kutils.ConvBlock(3, 256, model, add_maxpooling=False)

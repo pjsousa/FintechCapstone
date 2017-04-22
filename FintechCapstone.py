@@ -226,6 +226,54 @@ class FinCapstone():
 
 		return y_pred
 
+	def train_scenarioa(self, nb_epoch=100):
+		results = None
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+		n_tickers = None
+
+		results = np.zeros_like(self.valid_ticker_list())
+
+		n_tickers = self.valid_ticker_list().shape[0]
+
+		self.print_verbose_start()
+
+		for idx_ticker, itr_ticker in enumerate(self.valid_ticker_list()):
+			try:
+				self.print_verbose("{}/{} - {}".format(idx_ticker, results.shape[0], itr_ticker))
+
+
+				model = scenarioa.create_model(n_tickers)
+				X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(itr_ticker, trial.valid_ticker_list(), trial.train_from, trial.train_until, trial.test_from, True, "numpy")
+				scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
+
+				results[idx_ticker] = scenarioa.evaluate(model, X_test, y_test, X_train)
+
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenario", self.model_name, itr_ticker))
+			except:
+				print("")
+
+
+		self.print_verbose_end()
+
+		return pd.DataFrame(data=results, index=self.valid_ticker_list())
+
+	def predict_scenarioa(self, ticker):
+		features_df = self.load_baseline_features(ticker, parseDate=True)
+		features_df.set_index("Date", inplace=True)
+
+		labels_df = self.load_baseline_labels(ticker, parseDate=True)
+		labels_df.set_index("Date", inplace=True)
+
+		model = baseline_model.create_model()
+		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+		model.load_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, ticker))
+
+		y_pred = model.predict(X_test, verbose=0)
+
+		return y_pred
 
 	## Storage Helpers
 	def store_baseline_features(self, features_df, ticker):
