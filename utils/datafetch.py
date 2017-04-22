@@ -135,7 +135,7 @@ def duplicate_tickers(df, ign_exchange=False):
 	return _r
 
 
-def initial_dataload(ticker_list, verbose=True, del_temp=False):
+def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 	"""
 		Description:
 			<Description>
@@ -151,24 +151,19 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False):
 			
 	"""
 
-	_r = dict()
-	_r["OK"] = []
-	_r["NOK"] = []
 	itr_df = None
 	itr_err = None
 	filepath = "{}/{}.csv"
 	_len = len(ticker_list)
 	_start = datetime.datetime.now()
-	_end = None
 
 	for idx, itr_tkr in enumerate(ticker_list):
+		_start = datetime.datetime.now()
 		itr_df = fetch_quotes(itr_tkr)
 		if itr_df is None:
-			_r["NOK"].append(itr_tkr)
 			itr_err = True
 		else:
 			itr_err = False
-			_r["OK"].append(itr_tkr)
 			itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8")
 			if del_temp:
 				del itr_df
@@ -178,12 +173,13 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False):
 				print("({}/{}) ERROR receiving {}".format(idx + 1, _len, itr_tkr))
 			else:
 				print("({}/{}) Recv. and Stored {}".format(idx + 1, _len, itr_tkr))
-		_end = datetime.datetime.now()
-	
-	if verbose:
-		print("Took {}".format(str(_end - _start)))
 
-	return _r
+		if ~(status_df is None):
+			status_df.loc[itr_tkr, "status"] = "NOK" if itr_err else "OK"
+			status_df.loc[itr_tkr, "start"] = _start
+			status_df.loc[itr_tkr, "end"] = datetime.datetime.now()
+
+	return None
 
 
 def load_raw_frame(ticker, tryfetch=True, parseDate=True, dropAdjClose=False):

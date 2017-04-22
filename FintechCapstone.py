@@ -26,7 +26,6 @@ class FinCapstone():
 				model_name="ExampleFintech",
 				reset_status=False,
 				ticker_list_samplesize=100,
-				path_dataload_result="RES_initial_dataload.csv",
 				path_ticker_list=None,
 				date_from='1900-01-01',
 				date_to=str(datetime.date.today()),
@@ -44,7 +43,6 @@ class FinCapstone():
 		self.timespan_ab = None
 		self.bins = None
 		self.ticker_list_samplesize = ticker_list_samplesize
-		self.PATH_DATALOAD_RESULT = path_dataload_result
 		self.date_from = date_from
 		self.date_to = date_to
 		self.fill_value = fill_value
@@ -94,8 +92,10 @@ class FinCapstone():
 
 		if reset_status:
 			self.reset_status_files()
+			self.store_status_files()
 		else:
 			self.load_status_files()
+
 
 
 	def provision_fulltickerlist(self):
@@ -110,10 +110,13 @@ class FinCapstone():
 
 		return self.ticker_list
 
+
+
 	def provision_validtickerlist(self):
-		ticker_list = pd.read_csv(self.PATH_DATALOAD_RESULT)
-		ticker_list = ticker_list[ticker_list["STATUS"] == "OK"]
+		ticker_list = self.fetchstatus_df[self.fetchstatus_df["status"] == "OK"]
 		return ticker_list
+
+
 
 	def run_initial_dataload(self):
 		_ok = None
@@ -121,18 +124,11 @@ class FinCapstone():
 		_r = None
 
 		# Fetch data for all tickers
-		_r = datafetch.initial_dataload(self.ticker_list, verbose=True, del_temp=True)
+		datafetch.initial_dataload(self.ticker_list, verbose=True, del_temp=True, status_df=self.fetchstatus_df)
 
-		# Store the results from the data fetching
-		OKs = ["OK" for x in _r["OK"]]
-		NOKs = ["NOK" for x in _r["NOK"]]
+		self.store_status_files()
 
-		_ok = pd.DataFrame([OKs, _r["OK"]]).T
-		_nok = pd.DataFrame([NOKs, _r["NOK"]]).T
 
-		_r = pd.concat([_ok, _nok], axis=0)
-		_r.columns = ["STATUS", "Symbol"]
-		_r.to_csv(self.PATH_DATALOAD_RESULT, index=False)
 
 	def feature_engineering(self, feature_set="baseline"):
 		## Only work with tickers that were successfull during datafetch
@@ -140,32 +136,48 @@ class FinCapstone():
 		work_df = None
 
 		for ix, row in ticker_list.iterrows():
-			itr_ticker = row["Symbol"]
-			print("\n\n - {} - \n".format(itr_ticker))
-			itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=True)
-			
-			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
-			itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
+			try:
+				_start = datetime.datetime.now()
+				itr_ticker = ix
+				print("\n\n - {} - \n".format(itr_ticker))
+				itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=True)
+				
+				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
+				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
 
 
-			if feature_set == "baseline":
-				work_df = baseline_model.calc_features(itr_df,verbose=True)
-				self.store_baseline_features(work_df, itr_ticker)
+				if feature_set == "baseline":
+					work_df = baseline_model.calc_features(itr_df,verbose=True)
+					self.store_baseline_features(work_df, itr_ticker)
 
-				work_df = baseline_model.calc_labels(itr_df, self.timespan, verbose=True)
-				self.store_baseline_labels(work_df, itr_ticker)
-			elif feature_set == "scenarioa":
-				itr_df.set_index("Date", inplace=True)
-				work_df = scenarioa.calc_features(itr_df, normalize=True, verbose=True)
-				self.store_scenarioa_features(work_df, itr_ticker)
+					work_df = baseline_model.calc_labels(itr_df, self.timespan, verbose=True)
+					self.store_baseline_labels(work_df, itr_ticker)
+				elif feature_set == "scenarioa":
+					itr_df.set_index("Date", inplace=True)
+					work_df = scenarioa.calc_features(itr_df, normalize=True, verbose=True)
+					self.store_scenarioa_features(work_df, itr_ticker)
 
-				work_df = scenarioa.calc_labels(itr_df, verbose=True)
-				self.store_scenarioa_labels(work_df, itr_ticker)
-			else:
-				print("Invalid Feature Set.")
+					work_df = scenarioa.calc_labels(itr_df, verbose=True)
+					self.store_scenarioa_labels(work_df, itr_ticker)
+				else:
+					print("Invalid Feature Set.")
+
+				## KEEP track of status
+				self.featureengineer_status_df.loc[itr_ticker, "status"] = "OK"
+				self.featureengineer_status_df.loc[itr_ticker, "start"] = _start
+				self.featureengineer_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+			except:
+				self.featureengineer_status_df.loc[itr_ticker, "status"] = "NOK"
+				self.featureengineer_status_df.loc[itr_ticker, "start"] = _start
+				self.featureengineer_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+				self.store_status_files()
+
+		self.store_status_files()
+
+
 
 	def split_tickerlist(self, n_splits=4):
-		ticker_list = pd.read_csv(self.PATH_DATALOAD_RESULT)
+		ticker_list = self.fetchstatus_df.index.tolist()
 		_size = 1.0 / n_splits
 		itr_ticker_list = None
 		itr_path = None
@@ -180,9 +192,13 @@ class FinCapstone():
 
 			itr_ticker_list.to_csv(itr_path, index=False)
 
+
+
 	def valid_ticker_list(self):
-		_r = self.provision_validtickerlist()["Symbol"].values
+		_r = self.provision_validtickerlist().index.tolist()
 		return _r
+
+
 
 	def train_baseline(self, nb_epoch=100):
 		results = None
@@ -221,6 +237,8 @@ class FinCapstone():
 
 		return pd.DataFrame(data=results, index=self.valid_ticker_list())
 
+
+
 	def predict_baseline(self, ticker):
 		features_df = self.load_baseline_features(ticker, parseDate=True)
 		features_df.set_index("Date", inplace=True)
@@ -235,6 +253,8 @@ class FinCapstone():
 		y_pred = model.predict(X_test, verbose=0)
 
 		return y_pred
+
+
 
 	def train_scenarioa(self, nb_epoch=100):
 		results = None
@@ -269,6 +289,8 @@ class FinCapstone():
 		self.print_verbose_end()
 
 		return pd.DataFrame(data=results, index=self.valid_ticker_list())
+
+
 
 	def predict_scenarioa(self, ticker):
 		model = scenarioa.create_model(n_tickers)
@@ -333,7 +355,6 @@ class FinCapstone():
 		self.featureengineer_status_df = featureengineer_status_df
 		self.train_status_df = train_status_df
 
-
 	def store_status_files(self):
 		self.trialconfig_df.to_csv("{}_trialconfig.tmp".format(self.model_name))
 		self.fetchstatus_df.to_csv("{}_fetchstatus.tmp".format(self.model_name))
@@ -349,7 +370,6 @@ class FinCapstone():
 		self.fetchstatus_df.set_index("ticker", inplace=True)
 		self.featureengineer_status_df.set_index("ticker", inplace=True)
 		self.train_status_df.set_index("ticker", inplace=True)
-
 
 	## Storage Helpers
 	def store_baseline_features(self, features_df, ticker):
@@ -438,7 +458,6 @@ def dump_config(config_name):
 	default_config = [
 		["model_name", "ExampleFintech"],
 		["ticker_list_samplesize", 100],
-		["path_dataload_result", "RES_initial_dataload.csv"],
 		["path_ticker_list", None],
 		["date_from", '1900-01-01'],
 		["date_to", str(datetime.date.today())],
