@@ -1,0 +1,124 @@
+from __future__ import print_function
+import argparse
+import sys
+
+
+def dump_setup(args):
+	from FintechCapstone import setup
+
+	setup()
+
+
+
+def dump_config(config_path):
+	from FintechCapstone import dump_config
+
+	return dump_config(config_path)
+
+def exec_fetch(do_fetch=True, do_engineering=True):
+	from FintechCapstone import FinCapstone
+
+	date_from = '2009-01-01'
+	date_to = '2017-03-01'
+	timespan = {
+		"short_term": [1, 5]
+		,"medium_term": [40]
+		,"long_term": [90]
+	}
+
+	trial = FinCapstone(
+		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
+		, scenario="baseline"
+		, ticker_list_samplesize=4
+		, timespan=timespan
+		, date_from=date_from
+		, reset_status=True)
+
+	trial.run_initial_dataload()
+
+def exec_fengineer(do_fetch=True, do_engineering=True):
+	from FintechCapstone import FinCapstone
+
+	date_from = '2009-01-01'
+	date_to = '2017-03-01'
+	timespan = {
+		"short_term": [1, 5]
+		,"medium_term": [40]
+		,"long_term": [90]
+	}
+
+	trial = FinCapstone(
+		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
+		, scenario="baseline"
+		, ticker_list_samplesize=4
+		, timespan=timespan
+		, date_from=date_from
+		, reset_status=False)
+
+	trial.feature_engineering()
+
+def exec_training(do_fetch=True, do_engineering=True):
+	from FintechCapstone import FinCapstone
+
+	date_from = '2009-01-01'
+	date_to = '2017-03-01'
+	timespan = {
+		"short_term": [1, 5]
+		,"medium_term": [40]
+		,"long_term": [90]
+	}
+
+	trial = FinCapstone(
+		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
+		, scenario="baseline"
+		, ticker_list_samplesize=4
+		, timespan=timespan
+		, date_from=date_from
+		, reset_status=False)
+
+	trial.train(train_next=1)
+
+
+"""
+python capstone.py --setup
+python capstone.py --dump-config baseline
+python capstone.py --config baseline
+"""
+
+
+if __name__ == "__main__":
+	ap = argparse.ArgumentParser()
+
+	ap.add_argument("--setup", required=False, help="Create directory structure.", action="store_true")
+	ap.add_argument("--dump-config", required=False, help="Create dump configuration file.")
+	ap.add_argument("--config", required=False, help="Configuration file to use.")
+	ap.add_argument("--fetch", required=False, help="Execute a fetch session.", action="store_true")
+	ap.add_argument("--fengineer", required=False, help="Execute a fengineer session.", action="store_true")
+	ap.add_argument("--train", required=False, help="Execute a training session.", action="store_true")
+
+
+	args = None
+	try:
+		args = vars(ap.parse_args())
+	except:
+		ap.print_help()
+
+	if args is None:
+		sys.exit()
+
+	if args["setup"]:
+		dump_setup(args)
+
+	if not(args["dump_config"] is None):
+		dump_config(args["dump_config"])
+
+	if args["fetch"]:
+		exec_fetch()
+
+	if args["fengineer"]:
+		exec_fengineer()
+
+	if args["train"]:
+		exec_training()
+
+

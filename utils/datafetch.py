@@ -174,7 +174,7 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 			else:
 				print("({}/{}) Recv. and Stored {}".format(idx + 1, _len, itr_tkr))
 
-		if ~(status_df is None):
+		if not(status_df is None):
 			status_df.loc[itr_tkr, "status"] = "NOK" if itr_err else "OK"
 			status_df.loc[itr_tkr, "start"] = _start
 			status_df.loc[itr_tkr, "end"] = datetime.datetime.now()

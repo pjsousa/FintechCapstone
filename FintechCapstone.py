@@ -230,6 +230,7 @@ class FinCapstone():
 				self.train_status_df.loc[itr_ticker, "epochs"] = nb_epoch + self.train_status_df.loc[itr_ticker, "epochs"]
 				self.train_status_df.loc[itr_ticker, "start"] = _start
 				self.train_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+				self.store_status_files()
 
 			except Exception as e:
 				self.train_status_df.loc[itr_ticker, "status"] = "NOK"
