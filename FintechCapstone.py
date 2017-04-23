@@ -309,7 +309,7 @@ class FinCapstone():
 
 		print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
 
-		n_tickers  = self.valid_ticker_list().shape[0]
+		n_tickers  = len(self.valid_ticker_list())
 
 		model = scenarioa.create_model(n_tickers)
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
