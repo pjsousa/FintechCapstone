@@ -23,6 +23,7 @@ TINY_FLOAT = 1e-128
 class FinCapstone():
 
 	def __init__(self,
+				scenario="baseline",
 				model_name="ExampleFintech",
 				reset_status=False,
 				ticker_list_samplesize=100,
@@ -50,6 +51,7 @@ class FinCapstone():
 		self.train_until = dtparser.parse(train_until)
 		self.test_from = dtparser.parse(test_from)
 		self.model_name = model_name
+		self.scenario = scenario
 		
 		self.fetchstatus_df = None
 		self.featureengineer_status_df = None
@@ -126,11 +128,13 @@ class FinCapstone():
 		# Fetch data for all tickers
 		datafetch.initial_dataload(self.ticker_list, verbose=True, del_temp=True, status_df=self.fetchstatus_df)
 
+		self.trialconfig_df.loc["fetch_status","value"] = "COMPLETE"
 		self.store_status_files()
 
 
 
-	def feature_engineering(self, feature_set="baseline"):
+	def feature_engineering(self, scenario=None):
+		scenario = self.scenario if scenario is None else scenario
 		## Only work with tickers that were successfull during datafetch
 		ticker_list = self.provision_validtickerlist()
 		work_df = None
@@ -145,14 +149,13 @@ class FinCapstone():
 				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
 				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
 
-
-				if feature_set == "baseline":
+				if scenario == "baseline":
 					work_df = baseline_model.calc_features(itr_df,verbose=True)
 					self.store_baseline_features(work_df, itr_ticker)
 
 					work_df = baseline_model.calc_labels(itr_df, self.timespan, verbose=True)
 					self.store_baseline_labels(work_df, itr_ticker)
-				elif feature_set == "scenarioa":
+				elif scenario == "scenarioa":
 					itr_df.set_index("Date", inplace=True)
 					work_df = scenarioa.calc_features(itr_df, normalize=True, verbose=True)
 					self.store_scenarioa_features(work_df, itr_ticker)
@@ -172,6 +175,7 @@ class FinCapstone():
 				self.featureengineer_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
 				self.store_status_files()
 
+		self.trialconfig_df.loc["featureengineer_status","value"] = "COMPLETE"
 		self.store_status_files()
 
 
@@ -194,48 +198,87 @@ class FinCapstone():
 
 
 
+	def train(self, nb_epoch=1, train_next=None, ticker=None):
+		## train only one specific ticker
+		work_tickers = None
+		_start = None
+		iserror = False
+		model = None
+
+		if not(ticker is None):
+			work_tickers = [ticker]
+			train_next = 1
+		else:
+			work_tickers = self.train_status_df[self.train_status_df["status"] == "INCOMPLETE"].index.tolist()
+
+
+		if (ticker is None) and (train_next is None):
+			train_next = len(work_tickers)
+
+		for idx_ticker in range(train_next):
+			itr_ticker = work_tickers[idx_ticker]
+
+			try:
+				_start = datetime.datetime.now()
+
+				if self.scenario == "baseline":
+					model = self.train_baseline(itr_ticker, nb_epoch)
+				else:
+					model = self.train_scenarioa(itr_ticker, nb_epoch)
+
+				self.train_status_df.loc[itr_ticker, "status"] = "OK"
+				self.train_status_df.loc[itr_ticker, "epochs"] = nb_epoch + self.train_status_df.loc[itr_ticker, "epochs"]
+				self.train_status_df.loc[itr_ticker, "start"] = _start
+				self.train_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+
+			except Exception as e:
+				self.train_status_df.loc[itr_ticker, "status"] = "NOK"
+				self.train_status_df.loc[itr_ticker, "epochs"] = self.train_status_df.loc[itr_ticker, "epochs"]
+				self.train_status_df.loc[itr_ticker, "start"] = _start
+				self.train_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+				self.train_status_df.loc[itr_ticker, "msg"] = str(e)
+				self.store_status_files()
+				iserror = True
+
+		work_tickers = self.train_status_df[self.train_status_df["status"] == "INCOMPLETE"].index.tolist()
+
+		if len(work_tickers) == 0:
+			self.trialconfig_df.loc["modeltrain_status", "value"] = "ERRORS" if iserror else "DONE"
+
+		self.store_status_files()
+
+
 	def valid_ticker_list(self):
 		_r = self.provision_validtickerlist().index.tolist()
 		return _r
 
 
 
-	def train_baseline(self, nb_epoch=100):
+	def train_baseline(self, ticker, nb_epoch=100):
 		results = None
 		X_train = None
 		y_train = None
 		X_test = None
 		y_test = None
 
+		print("Training Baseline for {}, {}".format(ticker, nb_epoch))
+
 		results = np.zeros_like(self.valid_ticker_list())
 
-		self.print_verbose_start()
+		features_df = self.load_baseline_features(ticker, parseDate=True)
+		features_df.set_index("Date", inplace=True)
 
-		for idx_ticker, itr_ticker in enumerate(self.valid_ticker_list()):
-			try:
-				self.print_verbose("{}/{} - {}".format(idx_ticker, results.shape[0], itr_ticker))
+		labels_df = self.load_baseline_labels(ticker, parseDate=True)
+		labels_df.set_index("Date", inplace=True)
 
-				features_df = self.load_baseline_features(itr_ticker, parseDate=True)
-				features_df.set_index("Date", inplace=True)
+		model = baseline_model.create_model()
+		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
-				labels_df = self.load_baseline_labels(itr_ticker, parseDate=True)
-				labels_df.set_index("Date", inplace=True)
-	
-				model = baseline_model.create_model()
-				X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+		baseline_model.fit(model, X_train, y_train, X_test, y_test, nb_epoch)
 
-				baseline_model.fit(model, X_train, y_train, X_test, y_test, nb_epoch)
+		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, ticker))
 
-				results[idx_ticker] = baseline_model.evaluate(model, X_test, y_test)
-
-				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, itr_ticker))
-			except:
-				print("")
-
-
-		self.print_verbose_end()
-
-		return pd.DataFrame(data=results, index=self.valid_ticker_list())
+		return model
 
 
 
@@ -256,39 +299,27 @@ class FinCapstone():
 
 
 
-	def train_scenarioa(self, nb_epoch=100):
-		results = None
+	def train_scenarioa(self, ticker, nb_epoch=100):
 		X_train = None
 		y_train = None
 		X_test = None
 		y_test = None
 		n_tickers = None
 
-		results = np.zeros_like(self.valid_ticker_list())
+		print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
 
-		n_tickers = self.valid_ticker_list().shape[0]
+		n_tickers  = self.valid_ticker_list().shape[0]
 
-		self.print_verbose_start()
+		model = scenarioa.create_model(n_tickers)
+		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
+		scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
 
-		for idx_ticker, itr_ticker in enumerate(self.valid_ticker_list()):
-			try:
-				self.print_verbose("{}/{} - {}".format(idx_ticker, results.shape[0], itr_ticker))
+		results[idx_ticker] = scenarioa.evaluate(model, X_test, y_test, X_train)
 
-
-				model = scenarioa.create_model(n_tickers)
-				X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(itr_ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
-				scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
-
-				results[idx_ticker] = scenarioa.evaluate(model, X_test, y_test, X_train)
-
-				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenario", self.model_name, itr_ticker))
-			except:
-				print("")
+		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenario", self.model_name, ticker))
 
 
-		self.print_verbose_end()
-
-		return pd.DataFrame(data=results, index=self.valid_ticker_list())
+		return model
 
 
 
@@ -307,20 +338,22 @@ class FinCapstone():
 	##Status Files
 	def reset_status_files(self):
 		data = {
-			"date_from": "2000-01-01"
-			,"date_to": "2016-12-31"
-			,"train_from": "2016-12-31"
-			,"train_until": "2016-12-31"
-			,"test_from": "2016-12-31"
-			,"model_name": "alpha_3"
-			,"scenario": "baselone"
+			"date_from": self.date_from
+			,"date_to": self.date_to
+			,"train_from": self.train_from
+			,"train_until": self.train_until
+			,"test_from": self.test_from
+			,"model_name": self.model_name
+			,"scenario": "baseline"
 			,"fetch_status": "INCOMPLETE"
 			,"featureengineer_status": "INCOMPLETE"
 			,"modeltrain_status": "INCOMPLETE"
 		}
 
 		trialconfig_df = pd.DataFrame.from_dict(data, orient='index')
+		trialconfig_df.index.name = "property"
 		trialconfig_df.columns = pd.Index(["value"])
+
 
 		fetchstatus_df = pd.DataFrame()
 		fetchstatus_df["ticker"] = self.ticker_list
@@ -367,6 +400,7 @@ class FinCapstone():
 		self.featureengineer_status_df = pd.read_csv("{}_featureengineer_status.tmp".format(self.model_name))
 		self.train_status_df = pd.read_csv("{}_train_status.tmp".format(self.model_name))
 
+		self.trialconfig_df.set_index("property", inplace=True)
 		self.fetchstatus_df.set_index("ticker", inplace=True)
 		self.featureengineer_status_df.set_index("ticker", inplace=True)
 		self.train_status_df.set_index("ticker", inplace=True)
@@ -469,7 +503,7 @@ def dump_config(config_name):
 		["train_until", "2015-12-31"],
 		["test_from", "2016-01-01"]
 		["exchanges", "nasdaq"],
-		["feature_set", "baseline"]
+		["scenario", "baseline"]
 	]
 
 	config_path = "{}/{}.cfg".format(paths.CONFIG_PATH, config_name)
