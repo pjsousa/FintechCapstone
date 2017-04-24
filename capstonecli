@@ -27,9 +27,9 @@ def exec_fetch(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		, scenario="baseline"
-		, ticker_list_samplesize=4
+		#ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
+		scenario="scenarioa"
+		, ticker_list_samplesize=200
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=True)
@@ -48,9 +48,9 @@ def exec_fengineer(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		, scenario="baseline"
-		, ticker_list_samplesize=4
+		#ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
+		scenario="scenarioa"
+		, ticker_list_samplesize=200
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
@@ -69,14 +69,15 @@ def exec_training(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		, scenario="baseline"
-		, ticker_list_samplesize=4
+		#ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
+		scenario="scenarioa"
+		, ticker_list_samplesize=200
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.train(train_next=1)
+	#trial.train(train_next=1, nb_epoch=5)
+	trial.train(nb_epoch=2)
 
 
 """

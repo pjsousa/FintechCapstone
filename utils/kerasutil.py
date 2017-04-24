@@ -4,7 +4,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
 from keras.layers import Flatten
-from keras.layers.convolutional import Convolution2D
+from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.layers.convolutional import ZeroPadding2D
 from keras.layers.normalization import BatchNormalization
@@ -20,17 +20,17 @@ from sklearn.metrics import accuracy_score
 def ConvBlock(layers, filters, model, add_maxpooling=True):
 	for i in range(layers):
 		model.add(ZeroPadding2D((1, 1)))
-		model.add(Convolution2D(filters, 3, 3, activation='relu'))
+		model.add(Conv2D(filters, (3, 3), activation='relu'))
 
 	if add_maxpooling:
 		model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
 
-def FCBlock(model, add_batchnorm=False, add_dropout=False):
+def FCBlock(model, block_size=4096,add_batchnorm=False, add_dropout=False):
 	if add_batchnorm:
 		model.add(BatchNormalization())
 
-	model.add(Dense(4096, activation='relu'))
+	model.add(Dense(block_size, activation='relu', kernel_initializer="uniform"))
 
 
 	if add_dropout:

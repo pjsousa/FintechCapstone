@@ -12,7 +12,7 @@ from utils import kerasutil as kutils
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Flatten
-from keras.layers.convolutional import Convolution2D
+from keras.layers.convolutional import Conv2D
 from sklearn.metrics import accuracy_score
 
 #
@@ -183,9 +183,12 @@ def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, te
 	itr_df = load_scenarioa_labels(target_ticker, parseDate=True)
 	itr_df.set_index("Date", inplace=True)
 
-	# Split Features into Train and Test
+	# Split Labels into Train and Test
 	y_train_df = itr_df.loc[train_from:train_until, :]
 	y_test_df = itr_df.loc[test_from:, :]
+
+	X_train_pnl = X_train_pnl.loc[y_train_df.index.tolist(),::]
+	X_test_pnl = X_test_pnl.loc[y_test_df.index.tolist(),::]
 
 	## Normalize Close
 	if normalize:
@@ -262,21 +265,21 @@ def normalize_features(features_df):
 def create_model(n_tickers):
 	model = Sequential()
 
-	model.add(Convolution2D(64, 3, 3, input_shape=(1, 29, n_tickers), activation="relu"))
+	model.add(Conv2D(64, (3, 3), input_shape=(29, n_tickers, 1), activation="relu"))
 	kutils.ConvBlock(1, 64, model, add_maxpooling=False)
 	kutils.ConvBlock(2, 128, model, add_maxpooling=False)
 	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
 
-	# kutils.ConvBlock(3, 512, model, add_maxpooling=False)
-	# kutils.ConvBlock(3, 512, model, add_maxpooling=False)
-	
+	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
+	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
+
 	model.add(Flatten())
 
 	kutils.FCBlock(model, add_batchnorm=True)
 	kutils.FCBlock(model, add_batchnorm=True)
 	kutils.FCBlock(model, add_batchnorm=True)
 
-	model.add(Dense(4, init='normal'))
+	model.add(Dense(4, kernel_initializer='normal'))
 
 	# Compile model
 	model.compile(loss='mean_squared_error', optimizer='adam')
@@ -288,10 +291,10 @@ def fit(model, X_train, y_train, nb_epoch=1):
 
 
 	## Create a new dimension for the "channel"
-	X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1], X_train.shape[2])
+	X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], X_train.shape[2], 1)
 
 	## Fit
-	model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=32, verbose=1)
+	model.fit(X_train, y_train, epochs=nb_epoch, batch_size=32, verbose=1)
 
 	return model
 
@@ -300,7 +303,7 @@ def evaluate(model, X_test, y_test, X_train):
 	_r = None
 
 
-	X_test.reshape(X_test.shape[0], 1, X_test.shape[1], X_test.shape[2])
+	X_test.reshape(X_test.shape[0], X_test.shape[1], X_test.shape[2], 1)
 
 	y_pred = model.predict(X_test, verbose=0)
 

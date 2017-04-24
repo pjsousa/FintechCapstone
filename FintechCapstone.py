@@ -115,7 +115,13 @@ class FinCapstone():
 
 
 	def provision_validtickerlist(self):
-		ticker_list = self.fetchstatus_df[self.fetchstatus_df["status"] == "OK"]
+		ticker_list = None
+
+		if self.trialconfig_df.loc["featureengineer_status", "value"] is not "INCOMPLETE":
+			ticker_list = self.featureengineer_status_df[self.featureengineer_status_df["status"] == "OK"]
+		else:
+			ticker_list = self.fetchstatus_df[self.fetchstatus_df["status"] == "OK"]
+
 		return ticker_list
 
 
@@ -138,6 +144,7 @@ class FinCapstone():
 		## Only work with tickers that were successfull during datafetch
 		ticker_list = self.provision_validtickerlist()
 		work_df = None
+		iserror = None
 
 		for ix, row in ticker_list.iterrows():
 			try:
@@ -169,13 +176,15 @@ class FinCapstone():
 				self.featureengineer_status_df.loc[itr_ticker, "status"] = "OK"
 				self.featureengineer_status_df.loc[itr_ticker, "start"] = _start
 				self.featureengineer_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
-			except:
+			except Exception as e:
 				self.featureengineer_status_df.loc[itr_ticker, "status"] = "NOK"
 				self.featureengineer_status_df.loc[itr_ticker, "start"] = _start
 				self.featureengineer_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+				self.featureengineer_status_df.loc[itr_ticker, "msg"] = str(e)
 				self.store_status_files()
+				iserror = True
 
-		self.trialconfig_df.loc["featureengineer_status","value"] = "COMPLETE"
+		self.trialconfig_df.loc["featureengineer_status","value"] = "ERRORS" if iserror else "COMPLETE"
 		self.store_status_files()
 
 
@@ -230,6 +239,7 @@ class FinCapstone():
 				self.train_status_df.loc[itr_ticker, "epochs"] = nb_epoch + self.train_status_df.loc[itr_ticker, "epochs"]
 				self.train_status_df.loc[itr_ticker, "start"] = _start
 				self.train_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+				self.train_status_df.loc[itr_ticker, "msg"] = None
 				self.store_status_files()
 
 			except Exception as e:
@@ -251,6 +261,7 @@ class FinCapstone():
 
 	def valid_ticker_list(self):
 		_r = self.provision_validtickerlist().index.tolist()
+
 		return _r
 
 
@@ -315,8 +326,6 @@ class FinCapstone():
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 		scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
 
-		results[idx_ticker] = scenarioa.evaluate(model, X_test, y_test, X_train)
-
 		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenario", self.model_name, ticker))
 
 
@@ -345,7 +354,7 @@ class FinCapstone():
 			,"train_until": self.train_until
 			,"test_from": self.test_from
 			,"model_name": self.model_name
-			,"scenario": "baseline"
+			,"scenario": self.scenario
 			,"fetch_status": "INCOMPLETE"
 			,"featureengineer_status": "INCOMPLETE"
 			,"modeltrain_status": "INCOMPLETE"
