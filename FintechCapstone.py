@@ -17,6 +17,8 @@ from utils import paths_helper as paths
 import argparse
 import os
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 
 TINY_FLOAT = 1e-128
 
@@ -117,10 +119,8 @@ class FinCapstone():
 	def provision_validtickerlist(self):
 		ticker_list = None
 
-		if self.trialconfig_df.loc["featureengineer_status", "value"] is not "INCOMPLETE":
-			ticker_list = self.featureengineer_status_df[self.featureengineer_status_df["status"] == "OK"]
-		else:
-			ticker_list = self.fetchstatus_df[self.fetchstatus_df["status"] == "OK"]
+		ticker_list = self.fetchstatus_df[self.fetchstatus_df["status"] == "OK"]
+		ticker_list = ticker_list[~(self.featureengineer_status_df["status"] == "NOK")]
 
 		return ticker_list
 
