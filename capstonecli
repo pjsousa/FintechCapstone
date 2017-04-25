@@ -28,7 +28,7 @@ def exec_fetch(do_fetch=True, do_engineering=True):
 
 	trial = FinCapstone(
 		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		,scenario="scenarioa"
+		,scenario="baseline"
 		, ticker_list_samplesize=200
 		, timespan=timespan
 		, date_from=date_from
@@ -49,7 +49,7 @@ def exec_fengineer(do_fetch=True, do_engineering=True):
 
 	trial = FinCapstone(
 		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		,scenario="scenarioa"
+		,scenario="baseline"
 		, ticker_list_samplesize=200
 		, timespan=timespan
 		, date_from=date_from
@@ -70,7 +70,7 @@ def exec_training(do_fetch=True, do_engineering=True):
 
 	trial = FinCapstone(
 		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		,scenario="scenarioa"
+		,scenario="baseline"
 		, ticker_list_samplesize=200
 		, timespan=timespan
 		, date_from=date_from
@@ -92,13 +92,13 @@ def exec_eval(do_fetch=True, do_engineering=True):
 
 	trial = FinCapstone(
 		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		, scenario="scenarioa"
+		, scenario="baseline"
 		, ticker_list_samplesize=200
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.evaluate(train_next=1)
+	trial.evaluate(train_next=3)
 
 
 """

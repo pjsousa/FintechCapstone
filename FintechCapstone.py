@@ -277,7 +277,9 @@ class FinCapstone():
 		if self.scenario == "baseline":
 			model = baseline_model.create_model()
 		else:
-			model = scenarioa.create_model()
+			n_tickers = len(self.valid_ticker_list())
+			print("Found %s tickers" % n_tickers)
+			model = scenarioa.create_model(n_tickers)
 
 		for idx_ticker in range(train_next):
 			itr_ticker = work_tickers[idx_ticker]
@@ -285,23 +287,24 @@ class FinCapstone():
 				_start = datetime.datetime.now()
 
 				if self.scenario == "baseline":
-					evals = self.evaluate_baseline(itr_ticker)
+					evals = self.evaluate_baseline(itr_ticker, model)
 				else:
-					evals = self.evaluate_scenarioa(itr_ticker)
+					evals = self.evaluate_scenarioa(itr_ticker, model)
 
-				self.eval_status_df.loc[ticker, "status"] = "OK"
-				self.eval_status_df.loc[ticker, "epochs"] = self.train_status_df.loc[ticker, "epochs"]
-				self.eval_status_df.loc[ticker, "start"] = _start
-				self.eval_status_df.loc[ticker, "end"] = datetime.datetime.now()
-				self.eval_status_df.loc[ticker, "r_squared"] = evals["r_squared"]
-				self.eval_status_df.loc[ticker, "accuracy"] = evals["accuracy"]
+				self.eval_status_df.loc[itr_ticker, "status"] = "OK"
+				self.eval_status_df.loc[itr_ticker, "epochs"] = self.train_status_df.loc[itr_ticker, "epochs"]
+				self.eval_status_df.loc[itr_ticker, "start"] = _start
+				self.eval_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+				self.eval_status_df.loc[itr_ticker, "r_squared"] = evals["r_squared"]
+				self.eval_status_df.loc[itr_ticker, "accuracy"] = evals["accuracy"]
 			except Exception as e:
-				self.eval_status_df.loc[ticker, "status"] = "NOK"
-				self.eval_status_df.loc[ticker, "epochs"] = None
-				self.eval_status_df.loc[ticker, "start"] = _start
-				self.eval_status_df.loc[ticker, "end"] = datetime.datetime.now()
-				self.eval_status_df.loc[ticker, "r_squared"] = None
-				self.eval_status_df.loc[ticker, "accuracy"] = None
+				self.eval_status_df.loc[itr_ticker, "status"] = "NOK"
+				self.eval_status_df.loc[itr_ticker, "epochs"] = None
+				self.eval_status_df.loc[itr_ticker, "start"] = _start
+				self.eval_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
+				self.eval_status_df.loc[itr_ticker, "r_squared"] = None
+				self.eval_status_df.loc[itr_ticker, "accuracy"] = None
+				self.eval_status_df.loc[itr_ticker, "msg"] = str(e)
 
 				self.store_status_files()
 				iserror = True
@@ -353,12 +356,12 @@ class FinCapstone():
 		_r = None
 		model = baseline_model.create_model() if model is None else model
 		
-		print("Evaluating {}".format(itr_ticker))
+		print("Evaluating {}".format(ticker))
 		_start = datetime.datetime.now()
-		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, itr_ticker))
+		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, ticker))
 
-		features = self.load_baseline_features(itr_ticker, True).set_index("Date")
-		labels = self.load_baseline_labels(itr_ticker, True).set_index("Date")
+		features = self.load_baseline_features(ticker, True).set_index("Date")
+		labels = self.load_baseline_labels(ticker, True).set_index("Date")
 
 		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features, labels, self.train_from, self.train_until, self.test_from, "numpy")
 		y_pred = model.predict(X_test, verbose=0)
@@ -391,11 +394,13 @@ class FinCapstone():
 
 	def evaluate_scenarioa(self, ticker, model=None):
 		_r = None
-		model = scenarioa.create_model() if model is None else model
+		n_tickers = len(self.valid_ticker_list())
+		print("found %s ticker" % n_tickers)
+		model = scenarioa.create_model(n_tickers) if model is None else model
 		
 		print("Evaluating {}".format(ticker))
 		_start = datetime.datetime.now()
-		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenarioa", self.model_name, ticker))
+		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenario", self.model_name, ticker))
 
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 		y_pred = model.predict(X_test, verbose=0)
