@@ -6,6 +6,7 @@ from scipy import stats
 
 from keras.models import Sequential
 from keras.layers import Dense
+from sklearn.metrics import r2_score
 from sklearn.metrics import accuracy_score
 
 
@@ -68,7 +69,7 @@ def calc_labels(raw_df, timespan, verbose=True):
 
 	return result_df
 
-def prepare_problemspace(features_df, labels_df, train_from, train_until, test_from):
+def prepare_problemspace(features_df, labels_df, train_from, train_until, test_from, return_type="numpy"):
 	X_train = None
 	y_train = None
 	X_test = None
@@ -88,10 +89,11 @@ def prepare_problemspace(features_df, labels_df, train_from, train_until, test_f
 	X_test = features_df.loc[test_from:, :]
 	y_test = labels_df.loc[test_from:, :]
 
-	X_train = X_train.values
-	y_train = y_train.values
-	X_test = X_test.values
-	y_test = y_test.values
+	if return_type == "numpy":
+		X_train = X_train.values
+		y_train = y_train.values
+		X_test = X_test.values
+		y_test = y_test.values
 
 	return X_train, y_train, X_test, y_test
 
@@ -118,11 +120,19 @@ def fit(model, X_train, y_train, X_test, y_test, nb_epoch=100):
 
 	return model
 
-def evaluate(model, X_test, y_test):
-	_r = None
+def evaluate(model, X_test, y_test, return_type="dict"):
+	_r = dict()
 
 	y_pred = model.predict(X_test, verbose=0)
+	gain_test = (y_test > 0.0) * 1.0
+	gain_pred = (y_pred > 0.0) * 1.0
 
-	_r = accuracy_score((y_test > 0.0) * 1.0, (y_pred > 0.0) * 1.0)
+	_r["r_squared"] = r2_score(y_test, y_pred, multioutput = "uniform_average")
+	_r["accuracy"] = accuracy_score(gain_test, gain_pred)
+
+	if return_type == "pandas":
+		_r["r_squared"] = [_r["r_squared"]]
+		_r["accuracy"] = [_r["accuracy"]]
+		_r = pd.DataFrame.from_dict(_r)
 
 	return _r

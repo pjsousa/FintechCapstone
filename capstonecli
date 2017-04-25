@@ -79,6 +79,27 @@ def exec_training(do_fetch=True, do_engineering=True):
 	#trial.train(train_next=1, nb_epoch=5)
 	trial.train(train_next=1, nb_epoch=2)
 
+def exec_eval(do_fetch=True, do_engineering=True):
+	from FintechCapstone import FinCapstone
+
+	date_from = '2009-01-01'
+	date_to = '2017-03-01'
+	timespan = {
+		"short_term": [1, 5]
+		,"medium_term": [40]
+		,"long_term": [90]
+	}
+
+	trial = FinCapstone(
+		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
+		, scenario="scenarioa"
+		, ticker_list_samplesize=200
+		, timespan=timespan
+		, date_from=date_from
+		, reset_status=False)
+
+	trial.evaluate(train_next=1)
+
 
 """
 python capstone.py --setup
@@ -96,6 +117,8 @@ if __name__ == "__main__":
 	ap.add_argument("--fetch", required=False, help="Execute a fetch session.", action="store_true")
 	ap.add_argument("--fengineer", required=False, help="Execute a fengineer session.", action="store_true")
 	ap.add_argument("--train", required=False, help="Execute a training session.", action="store_true")
+	ap.add_argument("--evaluate", required=False, help="Execute an evaluation session.", action="store_true")
+	
 
 
 	args = None
@@ -121,5 +144,8 @@ if __name__ == "__main__":
 
 	if args["train"]:
 		exec_training()
+
+	if args["evaluate"]:
+		exec_eval()
 
 

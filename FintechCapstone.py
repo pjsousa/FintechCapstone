@@ -58,6 +58,7 @@ class FinCapstone():
 		self.fetchstatus_df = None
 		self.featureengineer_status_df = None
 		self.train_status_df = None
+		self.eval_status_df = None
 
 
 		self._start = None
@@ -259,6 +260,60 @@ class FinCapstone():
 		self.store_status_files()
 
 
+	def evaluate(self, train_next=None, ticker=None):
+		work_tickers = None
+		_start = None
+		iserror = False
+		model = None
+		evals = None
+
+		if not(ticker is None):
+			work_tickers = [ticker]
+			train_next = 1
+		else:
+			work_tickers = self.eval_status_df[self.eval_status_df["status"] == "INCOMPLETE"].index.tolist()
+
+
+		if self.scenario == "baseline":
+			model = baseline_model.create_model()
+		else:
+			model = scenarioa.create_model()
+
+		for idx_ticker in range(train_next):
+			itr_ticker = work_tickers[idx_ticker]
+			try:
+				_start = datetime.datetime.now()
+
+				if self.scenario == "baseline":
+					evals = self.evaluate_baseline(itr_ticker)
+				else:
+					evals = self.evaluate_scenarioa(itr_ticker)
+
+				self.eval_status_df.loc[ticker, "status"] = "OK"
+				self.eval_status_df.loc[ticker, "epochs"] = self.train_status_df.loc[ticker, "epochs"]
+				self.eval_status_df.loc[ticker, "start"] = _start
+				self.eval_status_df.loc[ticker, "end"] = datetime.datetime.now()
+				self.eval_status_df.loc[ticker, "r_squared"] = evals["r_squared"]
+				self.eval_status_df.loc[ticker, "accuracy"] = evals["accuracy"]
+			except Exception as e:
+				self.eval_status_df.loc[ticker, "status"] = "NOK"
+				self.eval_status_df.loc[ticker, "epochs"] = None
+				self.eval_status_df.loc[ticker, "start"] = _start
+				self.eval_status_df.loc[ticker, "end"] = datetime.datetime.now()
+				self.eval_status_df.loc[ticker, "r_squared"] = None
+				self.eval_status_df.loc[ticker, "accuracy"] = None
+
+				self.store_status_files()
+				iserror = True
+
+		if len(work_tickers) == 0:
+			self.trialconfig_df.loc["modeleval_status", "value"] = "ERRORS" if iserror else "DONE"
+
+		self.store_status_files()
+
+
+
+
 	def valid_ticker_list(self):
 		_r = self.provision_validtickerlist().index.tolist()
 
@@ -294,21 +349,22 @@ class FinCapstone():
 
 
 
-	def predict_baseline(self, ticker):
-		features_df = self.load_baseline_features(ticker, parseDate=True)
-		features_df.set_index("Date", inplace=True)
+	def evaluate_baseline(self, ticker, model=None):
+		_r = None
+		model = baseline_model.create_model() if model is None else model
+		
+		print("Evaluating {}".format(itr_ticker))
+		_start = datetime.datetime.now()
+		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, itr_ticker))
 
-		labels_df = self.load_baseline_labels(ticker, parseDate=True)
-		labels_df.set_index("Date", inplace=True)
+		features = self.load_baseline_features(itr_ticker, True).set_index("Date")
+		labels = self.load_baseline_labels(itr_ticker, True).set_index("Date")
 
-		model = baseline_model.create_model()
-		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
-		model.load_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "baseline", self.model_name, ticker))
-
+		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features, labels, self.train_from, self.train_until, self.test_from, "numpy")
 		y_pred = model.predict(X_test, verbose=0)
+		_r = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
 
-		return y_pred
-
+		return _r
 
 
 	def train_scenarioa(self, ticker, nb_epoch=100):
@@ -333,6 +389,22 @@ class FinCapstone():
 
 
 
+	def evaluate_scenarioa(self, ticker, model=None):
+		_r = None
+		model = scenarioa.create_model() if model is None else model
+		
+		print("Evaluating {}".format(ticker))
+		_start = datetime.datetime.now()
+		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenarioa", self.model_name, ticker))
+
+		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
+		y_pred = model.predict(X_test, verbose=0)
+		_r = scenarioa.evaluate(model, X_test, y_test, return_type="dict")
+
+		return _r
+
+
+
 	def predict_scenarioa(self, ticker):
 		model = scenarioa.create_model(n_tickers)
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(itr_ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
@@ -344,8 +416,9 @@ class FinCapstone():
 
 		return y_pred
 
-
-	##Status Files
+	##################
+	## Status Files ##
+	##################
 	def reset_status_files(self):
 		data = {
 			"date_from": self.date_from
@@ -358,6 +431,7 @@ class FinCapstone():
 			,"fetch_status": "INCOMPLETE"
 			,"featureengineer_status": "INCOMPLETE"
 			,"modeltrain_status": "INCOMPLETE"
+			,"modeleval_status": "INCOMPLETE"
 		}
 
 		trialconfig_df = pd.DataFrame.from_dict(data, orient='index')
@@ -393,29 +467,46 @@ class FinCapstone():
 		train_status_df["loss"] = None
 		train_status_df.set_index("ticker", inplace=True)
 
+		eval_status_df = pd.DataFrame()
+		eval_status_df["ticker"] = self.ticker_list
+		eval_status_df["epochs"] = 0
+		eval_status_df["status"] = "INCOMPLETE"
+		eval_status_df["start"] = None
+		eval_status_df["end"] = None
+		eval_status_df["r_squared"] = None
+		eval_status_df["accuracy"] = None
+		eval_status_df["msg"] = None
+		eval_status_df.set_index("ticker", inplace=True)
+
 		self.trialconfig_df = trialconfig_df
 		self.fetchstatus_df = fetchstatus_df
 		self.featureengineer_status_df = featureengineer_status_df
 		self.train_status_df = train_status_df
+		self.eval_status_df = eval_status_df
 
 	def store_status_files(self):
 		self.trialconfig_df.to_csv("{}_trialconfig.tmp".format(self.model_name))
 		self.fetchstatus_df.to_csv("{}_fetchstatus.tmp".format(self.model_name))
 		self.featureengineer_status_df.to_csv("{}_featureengineer_status.tmp".format(self.model_name))
 		self.train_status_df.to_csv("{}_train_status.tmp".format(self.model_name))
+		self.eval_status_df.to_csv("{}_eval_status.tmp".format(self.model_name))
 
 	def load_status_files(self):
 		self.trialconfig_df = pd.read_csv("{}_trialconfig.tmp".format(self.model_name))
 		self.fetchstatus_df = pd.read_csv("{}_fetchstatus.tmp".format(self.model_name))
 		self.featureengineer_status_df = pd.read_csv("{}_featureengineer_status.tmp".format(self.model_name))
 		self.train_status_df = pd.read_csv("{}_train_status.tmp".format(self.model_name))
+		self.eval_status_df = pd.read_csv("{}_eval_status.tmp".format(self.model_name))
 
 		self.trialconfig_df.set_index("property", inplace=True)
 		self.fetchstatus_df.set_index("ticker", inplace=True)
 		self.featureengineer_status_df.set_index("ticker", inplace=True)
 		self.train_status_df.set_index("ticker", inplace=True)
+		self.eval_status_df.set_index("ticker", inplace=True)
 
-	## Storage Helpers
+	#####################
+	## Storage Helpers ##
+	#####################
 	def store_baseline_features(self, features_df, ticker):
 		features_df.to_csv("{}/{}_baseline_X.csv".format(paths.BASELINE_DATA_PATH, ticker), index=False)
 		return True
@@ -468,7 +559,9 @@ class FinCapstone():
 		
 		return scenarioa.load_scenarioa_labels(ticker, parseDate)
 
-	## Verbose Helpers
+	#####################
+	## Verbose Helpers ##
+	#####################
 	def reset_verboseclock(self):
 		self._start = datetime.datetime.now()
 		self._step_i = self._start

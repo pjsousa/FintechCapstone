@@ -299,17 +299,23 @@ def fit(model, X_train, y_train, nb_epoch=1):
 	return model
 
 
-def evaluate(model, X_test, y_test, X_train):
-	_r = None
-
-
-	X_test.reshape(X_test.shape[0], X_test.shape[1], X_test.shape[2], 1)
+def evaluate(model, X_test, y_test, return_type="dict"):
+	_r = dict()
 
 	y_pred = model.predict(X_test, verbose=0)
+	gain_test = (y_test > 0.0) * 1.0
+	gain_pred = (y_pred > 0.0) * 1.0
 
-	_r = accuracy_score((y_test > 0.0) * 1.0, (y_pred > 0.0) * 1.0)
+	_r["r_squared"] = r2_score(y_test, y_pred, multioutput = "uniform_average")
+	_r["accuracy"] = accuracy_score(gain_test, gain_pred)
+
+	if return_type == "pandas":
+		_r["r_squared"] = [_r["r_squared"]]
+		_r["accuracy"] = [_r["accuracy"]]
+		_r = pd.DataFrame.from_dict(_r)
 
 	return _r
+
 
 def store_scenarioa_features(features_df, ticker):
 	features_df.to_csv("{}/{}_scenarioa_X.csv".format(paths.TRIALA_DATA_PATH, ticker))
