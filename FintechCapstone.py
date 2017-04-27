@@ -274,11 +274,16 @@ class FinCapstone():
 			work_tickers = self.eval_status_df[self.eval_status_df["status"] == "INCOMPLETE"].index.tolist()
 
 
+		if (ticker is None) and (train_next is None):
+			train_next = len(work_tickers)
+
+
 		if self.scenario == "baseline":
+			print("EVAL BA model for %s tickers" % n_tickers)
 			model = baseline_model.create_model()
 		else:
 			n_tickers = len(self.valid_ticker_list())
-			print("Found %s tickers" % n_tickers)
+			print("EVAL SA model for %s tickers" % n_tickers)
 			model = scenarioa.create_model(n_tickers)
 
 		for idx_ticker in range(train_next):
@@ -315,13 +320,10 @@ class FinCapstone():
 		self.store_status_files()
 
 
-
-
 	def valid_ticker_list(self):
 		_r = self.provision_validtickerlist().index.tolist()
 
 		return _r
-
 
 
 	def train_baseline(self, ticker, nb_epoch=100):
@@ -349,7 +351,6 @@ class FinCapstone():
 		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, ticker))
 
 		return model
-
 
 
 	def evaluate_baseline(self, ticker, model=None):
@@ -380,6 +381,8 @@ class FinCapstone():
 		print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
 
 		n_tickers  = len(self.valid_ticker_list())
+
+		print("TRAIN model for %s tickers" % n_tickers)
 
 		model = scenarioa.create_model(n_tickers)
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")

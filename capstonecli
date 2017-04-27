@@ -1,3 +1,4 @@
+#!/home/pedro/anaconda3/bin/python
 from __future__ import print_function
 import argparse
 import sys
@@ -7,8 +8,6 @@ def dump_setup(args):
 	from FintechCapstone import setup
 
 	setup()
-
-
 
 def dump_config(config_path):
 	from FintechCapstone import dump_config
@@ -27,9 +26,10 @@ def exec_fetch(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		,scenario="baseline"
-		, ticker_list_samplesize=200
+		#ticker_list=["GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB"]
+		scenario="baseline"
+		, model_name="FullBaseline"
+		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=True)
@@ -48,9 +48,10 @@ def exec_fengineer(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		,scenario="baseline"
-		, ticker_list_samplesize=200
+		#ticker_list=["GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB"]
+		scenario="baseline"
+		, model_name="FullBaseline"
+		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
@@ -69,15 +70,16 @@ def exec_training(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		,scenario="baseline"
-		, ticker_list_samplesize=200
+		#ticker_list=["GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB"]
+		scenario="baseline"
+		, model_name="FullBaseline"
+		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
 	#trial.train(train_next=1, nb_epoch=5)
-	trial.train(train_next=1, nb_epoch=2)
+	trial.train(train_next=1, nb_epoch=500)
 
 def exec_eval(do_fetch=True, do_engineering=True):
 	from FintechCapstone import FinCapstone
@@ -91,20 +93,21 @@ def exec_eval(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-		ticker_list=["ZHNE","BSFT","AERO","MATR","ITMSF","FIT","TIPT","OLBK","QADA","ATTU","LGF","STX","TPCS","GSAT","ZNGA","GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB", "TTWO", "PXLW", "UBI"]
-		, scenario="baseline"
-		, ticker_list_samplesize=200
+		#ticker_list=["GLW","HIMX","YHOO", "NWSA","JAKK","GLUU","AMZN", "AAPL", "EBAY", "GOOG", "NFLX", "DIS", "EA", "TWTR", "FB"]
+		 scenario="baseline"
+		, model_name="FullBaseline"
+		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.evaluate(train_next=3)
+	trial.evaluate(train_next=1)
 
 
 """
 python capstone.py --setup
-python capstone.py --dump-config baseline
-python capstone.py --config baseline
+python capstone.py --dump-config scenarioa
+python capstone.py --config scenarioa
 """
 
 
