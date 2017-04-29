@@ -16,6 +16,10 @@ from keras.layers import Flatten
 from keras.layers.convolutional import Conv2D
 from sklearn.metrics import accuracy_score
 
+from sklearn.decomposition import PCA
+
+import math
+
 #
 #	in : 
 #		multiple technical indicators:
@@ -52,7 +56,7 @@ def calc_labels(raw_df, verbose=True):
 
 
 
-def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, test_from, normalize=True, return_type="pandas"):
+def prepare_problemspace(ticker_list, train_from, train_until, test_from, normalize=True, return_type="pandas"):
 	X_train_dict = dict()
 	y_train_pnl = dict()
 	y_train_dict = dict()
@@ -132,16 +136,16 @@ def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, te
 	return X_train_pnl, y_train_pnl, X_test_pnl, y_test_pnl
 
 
-def create_model(n_tickers):
+def create_model(n_tickers, side):
 	model = Sequential()
 
-	model.add(Conv2D(64, (3, 3), input_shape=(29, n_tickers, 1), activation="relu"))
+	model.add(Conv2D(64, (3, 3), input_shape=(side, side, 1), activation="relu"))
 	kutils.ConvBlock(1, 64, model, add_maxpooling=False)
 	kutils.ConvBlock(2, 128, model, add_maxpooling=False)
 	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
 
-	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
-	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
+	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
+	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
 
 	model.add(Flatten())
 
@@ -154,6 +158,28 @@ def create_model(n_tickers):
 	# Compile model
 	model.compile(loss='mean_squared_error', optimizer='adam')
 	return model
+
+
+def dim_reduction(features, n_components):
+	X_reshaped = features.reshape(features.shape[0], features.shape[1]*features.shape[2])
+
+	pca = PCA(n_components=n_components)
+	pca.fit(X_reshaped)
+
+	X_transformed = pca.transform(X_reshaped)
+
+	_sroot =math.sqrt(X_transformed.shape[1])
+	_sd = math.ceil(_sroot)
+
+	_sq = _sd * _sd
+
+	_tail = np.zeros(shape=(X_transformed.shape[0], _sq - X_transformed.shape[1]))
+	_tail = _tail + X_transformed.mean()
+
+	X_final = np.append(X_transformed, _tail, axis=1)
+	X_final = X_final.reshape(X_final.shape[0], _sd, _sd, 1)
+
+	return X_final, pca
 
 
 
