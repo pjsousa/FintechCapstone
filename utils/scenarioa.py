@@ -202,6 +202,18 @@ def prepare_problemspace(target_ticker, ticker_list, train_from, train_until, te
 		y_train_df = y_train_df.values
 		y_test_df = y_test_df.values
 
+		X_train_pnl = np.where(~np.isnan(X_train_pnl),X_train_pnl, 0.0)
+		X_train_pnl = np.where(~np.isinf(X_train_pnl),X_train_pnl, 0.0)
+
+		X_test_pnl = np.where(~np.isnan(X_test_pnl),X_test_pnl, 0.0)
+		X_test_pnl = np.where(~np.isinf(X_test_pnl),X_test_pnl, 0.0)
+
+		y_train_df = np.where(~np.isnan(y_train_df),y_train_df, 0.0)
+		y_train_df = np.where(~np.isinf(y_train_df),y_train_df, 0.0)
+
+		y_test_df = np.where(~np.isnan(y_test_df),y_test_df, 0.0)
+		y_test_df = np.where(~np.isinf(y_test_df),y_test_df, 0.0)
+
 	return X_train_pnl, y_train_df, X_test_pnl, y_test_df
 
 

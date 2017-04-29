@@ -12,6 +12,7 @@ from utils import datafetch
 from utils import datapipe
 from utils import baseline_model
 from utils import scenarioa
+from utils import scenariob
 from utils import paths_helper as paths
 
 import argparse
@@ -170,6 +171,13 @@ class FinCapstone():
 
 					work_df = scenarioa.calc_labels(itr_df, verbose=True)
 					self.store_scenarioa_labels(work_df, itr_ticker)
+				elif scenario == "scenariob":
+					itr_df.set_index("Date", inplace=True)
+					work_df = scenariob.calc_features(itr_df, normalize=True, verbose=True)
+					self.store_scenariob_features(work_df, itr_ticker)
+
+					work_df = scenariob.calc_labels(itr_df, verbose=True)
+					self.store_scenariob_labels(work_df, itr_ticker)
 				else:
 					print("Invalid Feature Set.")
 
@@ -233,8 +241,13 @@ class FinCapstone():
 
 				if self.scenario == "baseline":
 					model = self.train_baseline(itr_ticker, nb_epoch)
-				else:
+				elif self.scenario == "scenarioa":
 					model = self.train_scenarioa(itr_ticker, nb_epoch)
+				elif self.scenario == "scenariob":
+					model = self.train_scenariob(itr_ticker, nb_epoch)
+				else:
+					model = None
+
 
 				self.train_status_df.loc[itr_ticker, "status"] = "OK"
 				self.train_status_df.loc[itr_ticker, "epochs"] = nb_epoch + self.train_status_df.loc[itr_ticker, "epochs"]
@@ -281,10 +294,15 @@ class FinCapstone():
 		if self.scenario == "baseline":
 			print("EVAL BA model for %s tickers" % n_tickers)
 			model = baseline_model.create_model()
-		else:
+		elif self.scenario == "scenarioa":
 			n_tickers = len(self.valid_ticker_list())
 			print("EVAL SA model for %s tickers" % n_tickers)
 			model = scenarioa.create_model(n_tickers)
+		elif self.scenario == "scenariob":
+			n_tickers = len(self.valid_ticker_list())
+			print("EVAL SA model for %s tickers" % n_tickers)
+			model = scenariob.create_model(n_tickers)
+
 
 		for idx_ticker in range(train_next):
 			itr_ticker = work_tickers[idx_ticker]
@@ -293,8 +311,10 @@ class FinCapstone():
 
 				if self.scenario == "baseline":
 					evals = self.evaluate_baseline(itr_ticker, model)
-				else:
+				elif self.scenario == "scenarioa":
 					evals = self.evaluate_scenarioa(itr_ticker, model)
+				elif self.scenario == "scenariob":
+					evals = self.evaluate_scenariob(itr_ticker, model)
 
 				self.eval_status_df.loc[itr_ticker, "status"] = "OK"
 				self.eval_status_df.loc[itr_ticker, "epochs"] = self.train_status_df.loc[itr_ticker, "epochs"]
@@ -413,16 +433,45 @@ class FinCapstone():
 
 
 
-	def predict_scenarioa(self, ticker):
-		model = scenarioa.create_model(n_tickers)
-		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(itr_ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
-		scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
+	def train_scenariob(self, ticker, nb_epoch=100):
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+		n_tickers = None
 
-		model.load_weights("{}/weights{}_{}_{}.h5".format(TEMP_PATH, "scenario", self.model_name, ticker))
+		print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
 
+		n_tickers  = len(self.valid_ticker_list())
+
+		print("TRAIN model for %s tickers" % n_tickers)
+
+		model = scenariob.create_model(n_tickers)
+		X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
+		scenariob.fit(model, X_train, y_train, nb_epoch=nb_epoch)
+
+		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, ticker))
+
+		return model
+
+
+
+	def evaluate_scenariob(self, ticker, model=None):
+		_r = None
+		n_tickers = len(self.valid_ticker_list())
+		print("found %s ticker" % n_tickers)
+		model = scenariob.create_model(n_tickers) if model is None else model
+		
+		print("Evaluating {}".format(ticker))
+		_start = datetime.datetime.now()
+		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, ticker))
+
+		X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 		y_pred = model.predict(X_test, verbose=0)
+		_r = scenariob.evaluate(model, X_test, y_test, return_type="dict")
 
-		return y_pred
+		return _r
+
 
 	##################
 	## Status Files ##
@@ -566,6 +615,24 @@ class FinCapstone():
 	def load_scenarioa_labels(self, ticker, parseDate=True):
 		
 		return scenarioa.load_scenarioa_labels(ticker, parseDate)
+
+
+	def store_scenariob_features(self, features_df, ticker):
+		
+		return scenariob.store_scenariob_features(features_df, ticker)
+
+	def load_scenariob_features(self, ticker, parseDate=True):
+		
+		return scenariob.load_scenariob_features(ticker, parseDate)
+
+	def store_scenariob_labels(self, features_df, ticker):
+		
+		return scenariob.store_scenariob_labels(features_df, ticker)
+
+	def load_scenariob_labels(self, ticker, parseDate=True):
+		
+		return scenariob.load_scenariob_labels(ticker, parseDate)
+
 
 	#####################
 	## Verbose Helpers ##
