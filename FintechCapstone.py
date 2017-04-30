@@ -18,6 +18,11 @@ from utils import paths_helper as paths
 import argparse
 import os
 
+try:
+	import pickle
+except:
+	import cPickle as pickle
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
@@ -244,7 +249,7 @@ class FinCapstone():
 				elif self.scenario == "scenarioa":
 					model = self.train_scenarioa(itr_ticker, nb_epoch)
 				elif self.scenario == "scenariob":
-					model = self.train_scenariob(itr_ticker, nb_epoch)
+					model = self.train_scenariob(None, nb_epoch)
 				else:
 					model = None
 
@@ -433,24 +438,34 @@ class FinCapstone():
 
 
 
-	def train_scenariob(self, ticker, nb_epoch=100):
+	def train_scenariob(self, ticker=None, nb_epoch=100):
 		X_train = None
 		y_train = None
 		X_test = None
 		y_test = None
 		n_tickers = None
 
-		print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
 
-		n_tickers  = len(self.valid_ticker_list())
+		if ticker is None:
+			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, return_type="numpy")
+			X_final, pca = scenariob.dim_reduction(X_train, 900)
+			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
+			model.fit(X_final, y_train, batch_size=64, epochs=nb_epoch)
 
-		print("TRAIN model for %s tickers" % n_tickers)
+			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, "MARKET"))
+			pickle.dump( favorite_color, open( "{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, "scenariob", self.model_name, "MARKET"), "wb" ) )
+		else:
+			print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
 
-		model = scenariob.create_model(n_tickers)
-		X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
-		scenariob.fit(model, X_train, y_train, nb_epoch=nb_epoch)
+			n_tickers  = len(self.valid_ticker_list())
 
-		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, ticker))
+			print("TRAIN model for %s tickers" % n_tickers)
+
+			model = scenariob.create_model(n_tickers)
+			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
+			scenariob.fit(model, X_train, y_train, nb_epoch=nb_epoch)
+
+			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, ticker))
 
 		return model
 

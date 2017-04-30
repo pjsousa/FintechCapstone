@@ -79,7 +79,7 @@ def exec_training(do_fetch=True, do_engineering=True):
 		, reset_status=False)
 
 	#trial.train(train_next=1, nb_epoch=5)
-	trial.train(train_next=1, nb_epoch=20)
+	trial.train(train_next=1, nb_epoch=3000)
 
 def exec_eval(do_fetch=True, do_engineering=True):
 	from FintechCapstone import FinCapstone

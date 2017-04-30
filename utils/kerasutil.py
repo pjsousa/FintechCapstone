@@ -30,8 +30,7 @@ def FCBlock(model, block_size=4096,add_batchnorm=False, add_dropout=False):
 	if add_batchnorm:
 		model.add(BatchNormalization())
 
-	model.add(Dense(block_size, activation='relu', kernel_initializer="uniform"))
-
+	model.add(Dense(block_size, activation='relu'))
 
 	if add_dropout:
 		model.add(Dropout(0.5))

@@ -140,18 +140,18 @@ def create_model(n_tickers, side):
 	model = Sequential()
 
 	model.add(Conv2D(64, (3, 3), input_shape=(side, side, 1), activation="relu"))
-	kutils.ConvBlock(1, 64, model, add_maxpooling=False)
-	kutils.ConvBlock(2, 128, model, add_maxpooling=False)
+	kutils.ConvBlock(1, 64, model, add_maxpooling=True)
+	kutils.ConvBlock(2, 128, model, add_maxpooling=True)
 	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
 
 	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
-	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
+	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
 
 	model.add(Flatten())
 
-	kutils.FCBlock(model, add_batchnorm=True)
-	kutils.FCBlock(model, add_batchnorm=True)
-	kutils.FCBlock(model, add_batchnorm=True)
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 
 	model.add(Dense(4 * n_tickers, kernel_initializer='normal'))
 
@@ -160,11 +160,12 @@ def create_model(n_tickers, side):
 	return model
 
 
-def dim_reduction(features, n_components):
+def dim_reduction(features, n_components, pca=None):
 	X_reshaped = features.reshape(features.shape[0], features.shape[1]*features.shape[2])
 
-	pca = PCA(n_components=n_components)
-	pca.fit(X_reshaped)
+	if pca is None:
+		pca = PCA(n_components=n_components)
+		pca.fit(X_reshaped)
 
 	X_transformed = pca.transform(X_reshaped)
 
