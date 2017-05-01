@@ -529,9 +529,8 @@ class FinCapstone():
 			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 		
 		print("Evaluating {}".format(ticker))
-		_start = datetime.datetime.now()
-		y_pred = model.predict(X_test, verbose=0)
-		_r = scenariob.evaluate(model, X_test, y_test, return_type="dict")
+		X_final = pca.transform(X_test)
+		_r = scenariob.evaluate(model, X_final, y_test, return_type="dict")
 
 		return _r
 

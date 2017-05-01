@@ -201,7 +201,9 @@ def fit(model, X_reduced, y_train, nb_epoch=1):
 def evaluate(model, X_test, y_test, return_type="dict"):
 	_r = dict()
 
-	y_pred = model.predict(X_test, verbose=0)
+	X = X_test.reshape(X_test.shape[0], X_test.shape[1], X_test.shape[2], 1)
+
+	y_pred = model.predict(X, verbose=0)
 	gain_test = (y_test > 0.0) * 1.0
 	gain_pred = (y_pred > 0.0) * 1.0
 
@@ -212,6 +214,8 @@ def evaluate(model, X_test, y_test, return_type="dict"):
 		_r["r_squared"] = [_r["r_squared"]]
 		_r["accuracy"] = [_r["accuracy"]]
 		_r = pd.DataFrame.from_dict(_r)
+
+	del X
 
 	return _r
 
