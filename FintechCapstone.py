@@ -357,8 +357,6 @@ class FinCapstone():
 
 		print("Training Baseline for {}, {}".format(ticker, nb_epoch))
 
-		results = np.zeros_like(self.valid_ticker_list())
-
 		features_df = self.load_baseline_features(ticker, parseDate=True)
 		features_df.set_index("Date", inplace=True)
 
@@ -374,7 +372,9 @@ class FinCapstone():
 			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
-			self.evaluate_baseline(ticker, model, (X_train, y_train, X_test, y_test))
+			results = self.evaluate_baseline(ticker, model, (X_train, y_train, X_test, y_test))
+
+			print(results)
 
 		
 
@@ -417,6 +417,7 @@ class FinCapstone():
 		X_test = None
 		y_test = None
 		n_tickers = None
+		results = None
 
 		print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
 
@@ -432,7 +433,8 @@ class FinCapstone():
 			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
-			self.evaluate_scenarioa(ticker, model, (X_train, y_train, X_test, y_test))
+			results = self.evaluate_scenarioa(ticker, model, (X_train, y_train, X_test, y_test))
+			print(results)
 
 
 		return model
@@ -477,6 +479,7 @@ class FinCapstone():
 		X_test = None
 		y_test = None
 		n_tickers = None
+		results = None
 
 
 		if ticker is None:
@@ -492,7 +495,8 @@ class FinCapstone():
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
-				self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
+				results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
+				print(results)
 				
 		else:
 			assert 1 > 2, \
