@@ -506,7 +506,7 @@ class FinCapstone():
 			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
 			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-			model = finetune_model(model)
+			model = scenariob.finetune_model(model)
 
 			for step_idx in np.arange(nb_epoch / 10):
 				scenariob.fit(model, X_final, y_train, nb_epoch=10)
@@ -526,7 +526,6 @@ class FinCapstone():
 		X_test = None
 		y_test = None
 
-
 		if (data is None) :
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, return_type="numpy")
 		else:
@@ -534,20 +533,19 @@ class FinCapstone():
 			y_train = data[1]
 			X_test = data[2]
 			y_test = data[3]
-		
+
 		if pca is None:
 			pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
-
 
 		if model is None:
 			#X_final, pca = scenariob.dim_reduction(X_train, 900, pca)
 			X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
 			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
 			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
-		
+
 		print("Evaluating {}".format(ticker))
-		X_final, pca = scenariob.dim_reduction(X_test, 11, pca)
-		_r = scenariob.evaluate(model, X_final, y_test, return_type="dict")
+		X_test_final, pca = scenariob.dim_reduction(X_test, 11, pca)
+		_r = scenariob.evaluate(model, X_test_final, y_test, return_type="dict")
 
 		return _r
 
