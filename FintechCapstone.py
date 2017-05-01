@@ -480,6 +480,7 @@ class FinCapstone():
 
 		if ticker is None:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=None, return_type="numpy")
+			print("Performing PCA")
 			#X_final, pca = scenariob.dim_reduction(X_train, 900)
 			X_final, pca = scenariob.dim_reduction(X_train, 11)
 
