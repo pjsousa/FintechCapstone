@@ -186,14 +186,14 @@ def dim_reduction(features, n_components, pca=None):
 
 
 
-def fit(model, X_train, y_train, nb_epoch=1):
+def fit(model, X_reduced, y_train, nb_epoch=1):
 
 
 		## Create a new dimension for the "channel"
-		X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], X_train.shape[2], 1)
+		X = X_reduced.reshape(X_reduced.shape[0], X_reduced.shape[1], X_reduced.shape[2], 1)
 
 		## Fit
-		model.fit(X_train, y_train, epochs=nb_epoch, batch_size=32, verbose=1)
+		model.fit(X, y_train, epochs=nb_epoch, batch_size=32, verbose=1)
 
 		return model
 

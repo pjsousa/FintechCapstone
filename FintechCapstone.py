@@ -488,7 +488,7 @@ class FinCapstone():
 
 
 			for step_idx in np.arange(nb_epoch / 10):
-				scenariob.fit(model, X_train, y_train, nb_epoch=10)
+				scenariob.fit(model, X_final, y_train, nb_epoch=10)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
