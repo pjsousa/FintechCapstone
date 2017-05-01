@@ -428,8 +428,8 @@ class FinCapstone():
 		model = scenarioa.create_model(n_tickers)
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 		
-		for step_idx in np.arange(nb_epoch / 50):
-			scenarioa.fit(model, X_train, y_train, nb_epoch=50)
+		for step_idx in np.arange(nb_epoch / 10):
+			scenarioa.fit(model, X_train, y_train, nb_epoch=10)
 			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
