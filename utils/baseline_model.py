@@ -115,8 +115,9 @@ def create_model():
 	model.compile(loss='mean_squared_error', optimizer='adam')
 	return model
 
-def fit(model, X_train, y_train, X_test, y_test, nb_epoch=100):
-	model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=128, verbose=1)
+def fit(model, X_train, y_train, nb_epoch=1):
+
+	model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=128, verbose=1, validation_data=_validation_data)
 
 	return model
 

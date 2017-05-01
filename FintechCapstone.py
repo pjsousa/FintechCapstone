@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from functools import partial
 from dateutil import parser as dtparser
+from sklearn.externals import joblib
 
 from utils import datafetch
 from utils import datapipe
@@ -18,10 +19,6 @@ from utils import paths_helper as paths
 import argparse
 import os
 
-try:
-	import pickle
-except:
-	import cPickle as pickle
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -371,25 +368,43 @@ class FinCapstone():
 		model = baseline_model.create_model()
 		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
-		baseline_model.fit(model, X_train, y_train, X_test, y_test, nb_epoch)
+		for step_idx in np.arange(nb_epoch / 50):
+			baseline_model.fit(model, X_train, y_train, 50)
 
-		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, ticker))
+			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
+			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+			self.evaluate_baseline(ticker, model, (X_train, y_train, X_test, y_test))
+
+		
 
 		return model
 
 
-	def evaluate_baseline(self, ticker, model=None):
+	def evaluate_baseline(self, ticker, model=None, data=None):
 		_r = None
-		model = baseline_model.create_model() if model is None else model
-		
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+
+		if model is None:
+			model = baseline_model.create_model()
+			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+		if data is None:
+			features = self.load_baseline_features(ticker, True).set_index("Date")
+			labels = self.load_baseline_labels(ticker, True).set_index("Date")
+
+			X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features, labels, self.train_from, self.train_until, self.test_from, "numpy")
+		else:
+			X_train = data[0]
+			y_train = data[1]
+			X_test = data[2]
+			y_test = data[3]
+
 		print("Evaluating {}".format(ticker))
 		_start = datetime.datetime.now()
-		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "baseline", self.model_name, ticker))
-
-		features = self.load_baseline_features(ticker, True).set_index("Date")
-		labels = self.load_baseline_labels(ticker, True).set_index("Date")
-
-		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features, labels, self.train_from, self.train_until, self.test_from, "numpy")
 		y_pred = model.predict(X_test, verbose=0)
 		_r = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
 
@@ -411,26 +426,44 @@ class FinCapstone():
 
 		model = scenarioa.create_model(n_tickers)
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
-		scenarioa.fit(model, X_train, y_train, nb_epoch=nb_epoch)
+		
+		for step_idx in np.arange(nb_epoch / 50):
+			scenarioa.fit(model, X_train, y_train, nb_epoch=50)
+			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
+			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
-		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenario", self.model_name, ticker))
+			self.evaluate_scenarioa(ticker, model, (X_train, y_train, X_test, y_test))
 
 
 		return model
 
 
 
-	def evaluate_scenarioa(self, ticker, model=None):
+	def evaluate_scenarioa(self, ticker, model=None, data=None):
 		_r = None
-		n_tickers = len(self.valid_ticker_list())
-		print("found %s ticker" % n_tickers)
-		model = scenarioa.create_model(n_tickers) if model is None else model
-		
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+
+		if model is None:
+			n_tickers = len(self.valid_ticker_list())
+			model = scenarioa.create_model(n_tickers)
+			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+		if data is None:
+			features = self.load_baseline_features(ticker, True).set_index("Date")
+			labels = self.load_baseline_labels(ticker, True).set_index("Date")
+
+			X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
+		else:
+			X_train = data[0]
+			y_train = data[1]
+			X_test = data[2]
+			y_test = data[3]
+
 		print("Evaluating {}".format(ticker))
 		_start = datetime.datetime.now()
-		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenario", self.model_name, ticker))
-
-		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 		y_pred = model.predict(X_test, verbose=0)
 		_r = scenarioa.evaluate(model, X_test, y_test, return_type="dict")
 
@@ -449,39 +482,52 @@ class FinCapstone():
 		if ticker is None:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, return_type="numpy")
 			X_final, pca = scenariob.dim_reduction(X_train, 900)
+
 			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
-			model.fit(X_final, y_train, batch_size=64, epochs=nb_epoch)
+			joblib.dump( pca, "{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, "MARKET"))
-			pickle.dump( favorite_color, open( "{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, "scenariob", self.model_name, "MARKET"), "wb" ) )
+
+			for step_idx in np.arange(nb_epoch / 50):
+				scenariob.fit(model, X_train, y_train, nb_epoch=50)
+				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+				self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
+				
 		else:
-			print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
-
-			n_tickers  = len(self.valid_ticker_list())
-
-			print("TRAIN model for %s tickers" % n_tickers)
-
-			model = scenariob.create_model(n_tickers)
-			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
-			scenariob.fit(model, X_train, y_train, nb_epoch=nb_epoch)
-
-			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, ticker))
+			assert 1 > 2, \
+				"Not implemented yet"
 
 		return model
 
 
-
-	def evaluate_scenariob(self, ticker, model=None):
+	def evaluate_scenariob(self, ticker, model=None, data=None, pca=None):
 		_r = None
-		n_tickers = len(self.valid_ticker_list())
-		print("found %s ticker" % n_tickers)
-		model = scenariob.create_model(n_tickers) if model is None else model
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+
+
+		if (data is None) :
+			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, return_type="numpy")
+		else:
+			X_train = data[0]
+			y_train = data[1]
+			X_test = data[2]
+			y_test = data[3]
+		
+		if pca is None:
+			pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+
+
+		if model is None:
+			X_final, pca = scenariob.dim_reduction(X_train, 900, pca)
+			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
+			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 		
 		print("Evaluating {}".format(ticker))
 		_start = datetime.datetime.now()
-		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, "scenariob", self.model_name, ticker))
-
-		X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 		y_pred = model.predict(X_test, verbose=0)
 		_r = scenariob.evaluate(model, X_test, y_test, return_type="dict")
 
