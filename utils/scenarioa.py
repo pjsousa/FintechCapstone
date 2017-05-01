@@ -301,7 +301,7 @@ def create_model(n_tickers):
 
 def fit(model, X_train, y_train, X_test=None, Y_test=None, nb_epoch=1):
 	_validation_data = None
-	if not(X_test is None) && not(y_test is None):
+	if not(X_test is None) and not(y_test is None):
 		_validation_data = (X_test, y_test)
 
 	## Create a new dimension for the "channel"
