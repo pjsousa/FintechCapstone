@@ -117,7 +117,7 @@ def create_model():
 
 def fit(model, X_train, y_train, nb_epoch=1):
 
-	model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=128, verbose=1, validation_data=_validation_data)
+	model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=128, verbose=1)
 
 	return model
 
