@@ -488,8 +488,8 @@ class FinCapstone():
 			joblib.dump( pca, "{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
 
-			for step_idx in np.arange(nb_epoch / 50):
-				scenariob.fit(model, X_final, y_train, nb_epoch=50)
+			for step_idx in np.arange(nb_epoch / 10):
+				scenariob.fit(model, X_final, y_train, nb_epoch=10)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", step_idx))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
@@ -508,8 +508,8 @@ class FinCapstone():
 
 			model = finetune_model(model)
 
-			for step_idx in np.arange(nb_epoch / 50):
-				scenariob.fit(model, X_final, y_train, nb_epoch=50)
+			for step_idx in np.arange(nb_epoch / 10):
+				scenariob.fit(model, X_final, y_train, nb_epoch=10)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
