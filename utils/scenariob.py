@@ -58,13 +58,15 @@ def calc_labels(raw_df, verbose=True):
 
 
 
-def prepare_problemspace(ticker_list, train_from, train_until, test_from, normalize=True, return_type="pandas"):
+def prepare_problemspace(ticker_list, train_from, train_until, test_from, normalize=True, ticker=None, return_type="pandas"):
 	X_train_dict = dict()
 	y_train_pnl = dict()
 	y_train_dict = dict()
 	X_test_dict = dict()
 	y_test_pnl = dict()
 	y_test_dict = dict()
+
+	marketlabels = True if ticker is None else False
 
 	itr_df = None
 	X_train_pnl = None
@@ -98,15 +100,25 @@ def prepare_problemspace(ticker_list, train_from, train_until, test_from, normal
 	X_test_pnl = X_test_pnl.swapaxes(0,1).swapaxes(2,1)
 
 
-	# Create Panel for Train Labels
-	y_train_pnl = pd.Panel(y_train_dict)
-	y_train_pnl = y_train_pnl.swapaxes(0,1)
-	y_train_pnl = y_train_pnl.to_frame(filter_observations=False).T
+	if marketlabels: 
+		# Create Panel for Train Labels
+		y_train_pnl = pd.Panel(y_train_dict)
+		y_train_pnl = y_train_pnl.swapaxes(0,1)
+		y_train_pnl = y_train_pnl.to_frame(filter_observations=False).T
 
-	# Create Panel for Test Labels
-	y_test_pnl = pd.Panel(y_test_dict)
-	y_test_pnl = y_test_pnl.swapaxes(0,1)
-	y_test_pnl = y_test_pnl.to_frame(filter_observations=False).T
+		# Create Panel for Test Labels
+		y_test_pnl = pd.Panel(y_test_dict)
+		y_test_pnl = y_test_pnl.swapaxes(0,1)
+		y_test_pnl = y_test_pnl.to_frame(filter_observations=False).T
+	else:
+		## Load Labels
+		itr_df = load_scenariob_labels(ticker, parseDate=True)
+		itr_df.set_index("Date", inplace=True)
+
+		# Split Features into Train and Test
+		y_train_pnl = itr_df.loc[train_from:train_until, :]
+		y_test_pnl = itr_df.loc[test_from:, :]
+
 
 
 	## Normalize Close
@@ -160,6 +172,38 @@ def create_model(n_tickers, side):
 	# Compile model
 	model.compile(loss='mean_squared_error', optimizer='adam')
 	return model
+
+
+def finetune_model(model):
+	_nlayers = len(model.layers)
+
+	model.pop()
+	model.pop()
+	model.pop()
+	model.pop()
+	model.pop()
+	model.pop()
+	model.pop()
+	model.pop()
+	model.pop()
+	model.pop()
+
+	for layer in model.layers: layer.trainable=False
+
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
+
+	model.add(Dense(4, kernel_initializer='normal'))
+
+	# Compile model
+	model.compile(loss='mean_squared_error', optimizer='adam')
+
+	assert _nlayers == len(model.layers), \
+		"scenariob.finetune result does not have the same depth as the original"
+
+	return model
+
 
 
 def dim_reduction(features, n_components, pca=None):
