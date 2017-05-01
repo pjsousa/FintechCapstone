@@ -119,6 +119,8 @@ def prepare_problemspace(ticker_list, train_from, train_until, test_from, normal
 		y_train_pnl = itr_df.loc[train_from:train_until, :]
 		y_test_pnl = itr_df.loc[test_from:, :]
 
+		X_train_pnl = X_train_pnl.loc[y_train_pnl.index.tolist(),::]
+		X_test_pnl = X_test_pnl.loc[y_test_pnl.index.tolist(),::]
 
 
 	## Normalize Close
