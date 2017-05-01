@@ -100,16 +100,16 @@ def prepare_problemspace(features_df, labels_df, train_from, train_until, test_f
 def create_model():
 	# create model
 	model = Sequential()
-	model.add(Dense(4, input_dim=4, init='normal', activation='relu'))
-	model.add(Dense(4096, init='normal', activation="relu"))
-	model.add(Dense(4096, init='normal', activation="relu"))
-	# model.add(Dense(4096, init='normal', activation="relu"))
-	# model.add(Dense(4096, init='normal', activation="relu"))
-	# model.add(Dense(4096, init='normal', activation="relu"))
+	model.add(Dense(4, input_dim=4, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
+	# model.add(Dense(4096, kernel_initializer='normal', activation="relu"))
 	
 	#output
-	#model.add(Dense(4, init='normal', activation="sigmoid"))
-	model.add(Dense(4, init='normal'))
+	#model.add(Dense(4, kernel_initializer='normal', activation="sigmoid"))
+	model.add(Dense(4, kernel_initializer='normal'))
 	# Compile model
 	#model.compile(loss='binary_crossentropy', optimizer='adam', metrics=["accuracy"])
 	model.compile(loss='mean_squared_error', optimizer='adam')
@@ -117,7 +117,7 @@ def create_model():
 
 def fit(model, X_train, y_train, nb_epoch=1):
 
-	model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=128, verbose=1)
+	model.fit(X_train, y_train, epochs=nb_epoch, batch_size=128, verbose=1)
 
 	return model
 
