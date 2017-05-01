@@ -404,8 +404,6 @@ class FinCapstone():
 			y_test = data[3]
 
 		print("Evaluating {}".format(ticker))
-		_start = datetime.datetime.now()
-		y_pred = model.predict(X_test, verbose=0)
 		_r = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
 
 		return _r
@@ -466,7 +464,6 @@ class FinCapstone():
 
 		print("Evaluating {}".format(ticker))
 		_start = datetime.datetime.now()
-		y_pred = model.predict(X_test, verbose=0)
 		_r = scenarioa.evaluate(model, X_test, y_test, return_type="dict")
 
 		return _r
