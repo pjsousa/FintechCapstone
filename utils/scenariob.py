@@ -14,7 +14,9 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers.convolutional import Conv2D
+from sklearn.metrics import r2_score
 from sklearn.metrics import accuracy_score
+
 
 from sklearn.decomposition import PCA
 
