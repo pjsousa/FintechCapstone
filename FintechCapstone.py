@@ -478,6 +478,8 @@ class FinCapstone():
 		n_tickers = None
 		results = None
 		iserror_pca = False
+		X_final = None
+		pca = None
 
 		if ticker is None:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=None, return_type="numpy")
@@ -506,6 +508,7 @@ class FinCapstone():
 				X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
 			except ValueError as e:
 				print("PCA on disk is not for this model. Run train_scenariob(ticker=None) to train the market model.")
+				raise
 
 
 			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
