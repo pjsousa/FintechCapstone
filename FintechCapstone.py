@@ -58,6 +58,7 @@ class FinCapstone():
 		self.model_name = model_name
 		self.scenario = scenario
 		
+		self.trialconfig_df = None
 		self.fetchstatus_df = None
 		self.featureengineer_status_df = None
 		self.train_status_df = None
@@ -246,7 +247,12 @@ class FinCapstone():
 				elif self.scenario == "scenarioa":
 					model = self.train_scenarioa(itr_ticker, nb_epoch)
 				elif self.scenario == "scenariob":
-					model = self.train_scenariob(None, nb_epoch)
+					
+					if self.trialconfig_df.loc["modeltrainmarket_status","value"] == "INCOMPLETE":
+						model = self.train_scenariob(None, nb_epoch)
+						self.trialconfig_df.loc["modeltrainmarket_status","value"] = "COMPLETE"
+					
+					model = self.train_scenariob(itr_ticker, nb_epoch)
 				else:
 					model = None
 
@@ -367,22 +373,33 @@ class FinCapstone():
 		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
 		for step_idx in np.arange(nb_epoch / 50):
+			_start = datetime.datetime.now()
+			_epoch_index = ((step_idx*50)+50)
+
 			baseline_model.fit(model, X_train, y_train, 50)
 
-			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
+			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
 			results = self.evaluate_baseline(ticker, model, (X_train, y_train, X_test, y_test))
 
 			print(results)
+			
+			self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
+			self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
+			self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0].r_squared
+			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0].accuracy
+			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1].r_squared
+			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1].accuracy
 
-		
+			self.store_status_files()
 
 		return model
 
 
 	def evaluate_baseline(self, ticker, model=None, data=None):
-		_r = None
+		_r = [None] * 2
 		X_train = None
 		y_train = None
 		X_test = None
@@ -404,7 +421,8 @@ class FinCapstone():
 			y_test = data[3]
 
 		print("Evaluating {}".format(ticker))
-		_r = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
+		_r[0] = baseline_model.evaluate(model, X_train, X_test, return_type="dict")
+		_r[1] = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
 
 		return _r
 
@@ -427,20 +445,30 @@ class FinCapstone():
 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
 		
 		for step_idx in np.arange(nb_epoch / 10):
+			_start = datetime.datetime.now()
+			_epoch_index = ((step_idx*50)+50)
+
 			scenarioa.fit(model, X_train, y_train, nb_epoch=10)
-			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
+			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
 			results = self.evaluate_scenarioa(ticker, model, (X_train, y_train, X_test, y_test))
 			print(results)
 
+			self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
+			self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
+			self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0].r_squared
+			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0].accuracy
+			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1].r_squared
+			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1].accuracy
 
 		return model
 
 
 
 	def evaluate_scenarioa(self, ticker, model=None, data=None):
-		_r = None
+		_r = [None] * 2
 		X_train = None
 		y_train = None
 		X_test = None
@@ -464,7 +492,8 @@ class FinCapstone():
 
 		print("Evaluating {}".format(ticker))
 		_start = datetime.datetime.now()
-		_r = scenarioa.evaluate(model, X_test, y_test, return_type="dict")
+		_r[0] = scenarioa.evaluate(model, X_train, y_train, return_type="dict")
+		_r[1] = scenarioa.evaluate(model, X_test, y_test, return_type="dict")
 
 		return _r
 
@@ -480,6 +509,7 @@ class FinCapstone():
 		iserror_pca = False
 		X_final = None
 		pca = None
+		model = None
 
 		if ticker is None:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=None, return_type="numpy")
@@ -492,43 +522,72 @@ class FinCapstone():
 
 
 			for step_idx in np.arange(nb_epoch / 10):
+				_start = datetime.datetime.now()
+				_epoch_index = ((step_idx*50)+50)
+
 				scenariob.fit(model, X_final, y_train, nb_epoch=10)
-				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", step_idx))
+				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
 				results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
 				print(results)
+
+				self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
+				self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
+				self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0].r_squared
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0].accuracy
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1].r_squared
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1].accuracy
 		else:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=ticker, return_type="numpy")
 			
-			pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
 			try:
+				pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+
 				#X_final, pca = scenariob.dim_reduction(X_train, 900)
 				X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
-			except ValueError as e:
-				print("PCA on disk is not for this model. Run train_scenariob(ticker=None) to train the market model.")
+
+				model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
+				model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+			except OSError as e:
+				print("Market weights file does not exist. Run train_scenariob(ticker=None) to train the market model. \n\n\n")
 				raise
-
-
-			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
-			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+			except ValueError as e:
+				print("PCA on disk is not for this model. \n Run train_scenariob(ticker=None) to train the market model. \n\n\n")
+				raise
+			except FileNotFoundError as e:
+				print("PCA on disk does not exist. \n Run train_scenariob(ticker=None) to train the market model. \n\n\n")
+				raise
 
 			model = scenariob.finetune_model(model)
 
 			for step_idx in np.arange(nb_epoch / 10):
+				_start = datetime.datetime.now()
+				_epoch_index = ((step_idx*50)+50)
+
 				scenariob.fit(model, X_final, y_train, nb_epoch=10)
-				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
+				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
 				results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
 				print(results)
 
+				self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
+				self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
+				self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0].r_squared
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0].accuracy
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1].r_squared
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1].accuracy
+
 		return model
 
 
+
 	def evaluate_scenariob(self, ticker, model=None, data=None, pca=None):
-		_r = None
+		_r = [None] * 2
 		X_train = None
 		y_train = None
 		X_test = None
@@ -552,8 +611,11 @@ class FinCapstone():
 			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
 		print("Evaluating {}".format(ticker))
+		X_train_final, pca = scenariob.dim_reduction(X_train, 11, pca)
+		_r[0] = scenariob.evaluate(model, X_train_final, y_train, return_type="dict")
+
 		X_test_final, pca = scenariob.dim_reduction(X_test, 11, pca)
-		_r = scenariob.evaluate(model, X_test_final, y_test, return_type="dict")
+		_r[1] = scenariob.evaluate(model, X_test_final, y_test, return_type="dict")
 
 		return _r
 
@@ -574,6 +636,7 @@ class FinCapstone():
 			,"featureengineer_status": "INCOMPLETE"
 			,"modeltrain_status": "INCOMPLETE"
 			,"modeleval_status": "INCOMPLETE"
+			,"modeltrainmarket_status": "INCOMPLETE"
 		}
 
 		trialconfig_df = pd.DataFrame.from_dict(data, orient='index')
@@ -617,8 +680,10 @@ class FinCapstone():
 		eval_status_df["end"] = None
 		eval_status_df["r_squared"] = None
 		eval_status_df["accuracy"] = None
+		eval_status_df["r_squared_test"] = None
+		eval_status_df["accuracy_test"] = None
 		eval_status_df["msg"] = None
-		eval_status_df.set_index("ticker", inplace=True)
+		eval_status_df.set_index(["ticker", "epochs"], inplace=True)
 
 		self.trialconfig_df = trialconfig_df
 		self.fetchstatus_df = fetchstatus_df
@@ -644,7 +709,7 @@ class FinCapstone():
 		self.fetchstatus_df.set_index("ticker", inplace=True)
 		self.featureengineer_status_df.set_index("ticker", inplace=True)
 		self.train_status_df.set_index("ticker", inplace=True)
-		self.eval_status_df.set_index("ticker", inplace=True)
+		self.eval_status_df.set_index(["ticker", "epochs"], inplace=True)
 
 	#####################
 	## Storage Helpers ##
