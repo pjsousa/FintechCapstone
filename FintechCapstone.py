@@ -502,10 +502,10 @@ class FinCapstone():
 				
 				pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-				#X_final, pca = scenariob.dim_reduction(X_train, 900)
 				try:
+					#X_final, pca = scenariob.dim_reduction(X_train, 900)
 					X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
-				except ValueError:
+				except ValueError as e:
 					print("PCA on disk is not for this model. Run train_scenariob(ticker=None) to train the market model.")
 
 
