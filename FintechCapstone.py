@@ -525,7 +525,7 @@ class FinCapstone():
 				_start = datetime.datetime.now()
 				_epoch_index = ((step_idx*10)+10)
 
-				scenariob.fit(model, X_final, y_train, nb_epoch=nb_epoch)
+				scenariob.fit(model, X_final, y_train, nb_epoch=10)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
@@ -567,7 +567,7 @@ class FinCapstone():
 				_start = datetime.datetime.now()
 				_epoch_index = ((step_idx*10)+10)
 
-				scenariob.fit(model, X_final, y_train, nb_epoch=nb_epoch)
+				scenariob.fit(model, X_final, y_train, nb_epoch=10)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
@@ -577,10 +577,10 @@ class FinCapstone():
 				self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
 				self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
 				self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
-				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0].r_squared
-				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0].accuracy
-				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1].r_squared
-				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1].accuracy
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
 
 		return model
 
