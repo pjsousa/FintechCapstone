@@ -477,6 +477,7 @@ class FinCapstone():
 		y_test = None
 		n_tickers = None
 		results = None
+		iserror_pca = False
 
 		if ticker is None:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=None, return_type="numpy")
@@ -496,25 +497,30 @@ class FinCapstone():
 				results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
 				print(results)
 		else:
-			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=ticker, return_type="numpy")
-			
-			pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+			try:
+				X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=ticker, return_type="numpy")
+				
+				pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-			#X_final, pca = scenariob.dim_reduction(X_train, 900)
-			X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
+				#X_final, pca = scenariob.dim_reduction(X_train, 900)
+				try:
+					X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
+				except ValueError:
+					print("PCA on disk is not for this model. Run train_scenariob(ticker=None) to train the market model.")
 
-			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
-			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-			model = scenariob.finetune_model(model)
+				model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
+				model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-			for step_idx in np.arange(nb_epoch / 10):
-				scenariob.fit(model, X_final, y_train, nb_epoch=10)
-				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
-				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+				model = scenariob.finetune_model(model)
 
-				results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
-				print(results)
+				for step_idx in np.arange(nb_epoch / 10):
+					scenariob.fit(model, X_final, y_train, nb_epoch=10)
+					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, step_idx))
+					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+					results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
+					print(results)
 
 		return model
 
