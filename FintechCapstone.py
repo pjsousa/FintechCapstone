@@ -421,7 +421,7 @@ class FinCapstone():
 			y_test = data[3]
 
 		print("Evaluating {}".format(ticker))
-		_r[0] = baseline_model.evaluate(model, X_train, X_test, return_type="dict")
+		_r[0] = baseline_model.evaluate(model, X_train, y_train, return_type="dict")
 		_r[1] = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
 
 		return _r
