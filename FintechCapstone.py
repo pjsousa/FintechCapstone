@@ -463,6 +463,8 @@ class FinCapstone():
 			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
 			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
 
+			self.store_status_files()
+
 		return model
 
 
@@ -539,6 +541,8 @@ class FinCapstone():
 				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
 				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
 				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+
+				self.store_status_files()
 		else:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=ticker, return_type="numpy")
 			
@@ -582,6 +586,7 @@ class FinCapstone():
 				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
 				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
 
+				self.store_status_files()
 		return model
 
 
