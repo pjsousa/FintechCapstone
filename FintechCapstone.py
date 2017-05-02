@@ -673,9 +673,9 @@ class FinCapstone():
 		train_status_df.set_index("ticker", inplace=True)
 
 		eval_status_df = pd.DataFrame()
-		eval_status_df["ticker"] = self.ticker_list
+		eval_status_df["ticker"] = "PADLINE"
 		eval_status_df["epochs"] = 0
-		eval_status_df["status"] = "INCOMPLETE"
+		eval_status_df["status"] = "PADLINE"
 		eval_status_df["start"] = None
 		eval_status_df["end"] = None
 		eval_status_df["r_squared"] = None
