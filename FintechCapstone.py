@@ -516,8 +516,7 @@ class FinCapstone():
 		if ticker is None:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=None, return_type="numpy")
 			print("Performing PCA")
-			#X_final, pca = scenariob.dim_reduction(X_train, 900)
-			X_final, pca = scenariob.dim_reduction(X_train, 11)
+			X_final, pca = scenariob.dim_reduction(X_train, 900)
 
 			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
 			joblib.dump( pca, "{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
@@ -550,8 +549,7 @@ class FinCapstone():
 			try:
 				pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-				#X_final, pca = scenariob.dim_reduction(X_train, 900)
-				X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
+				X_final, pca = scenariob.dim_reduction(X_train, 900, pca)
 
 				model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
 				model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
@@ -610,16 +608,15 @@ class FinCapstone():
 			pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
 		if model is None:
-			#X_final, pca = scenariob.dim_reduction(X_train, 900, pca)
-			X_final, pca = scenariob.dim_reduction(X_train, 11, pca)
+			X_final, pca = scenariob.dim_reduction(X_train, 900, pca)
 			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
 			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
 		print("Evaluating {}".format(ticker))
-		X_train_final, pca = scenariob.dim_reduction(X_train, 11, pca)
+		X_train_final, pca = scenariob.dim_reduction(X_train, 900, pca)
 		_r[0] = scenariob.evaluate(model, X_train_final, y_train, return_type="dict")
 
-		X_test_final, pca = scenariob.dim_reduction(X_test, 11, pca)
+		X_test_final, pca = scenariob.dim_reduction(X_test, 900, pca)
 		_r[1] = scenariob.evaluate(model, X_test_final, y_test, return_type="dict")
 
 		return _r
