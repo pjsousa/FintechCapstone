@@ -522,11 +522,11 @@ class FinCapstone():
 			joblib.dump( pca, "{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
 			print("Training Market")
-			for step_idx in np.arange(nb_epoch / 10):
+			for step_idx in np.arange(nb_epoch / 50):
 				_start = datetime.datetime.now()
-				_epoch_index = int(((step_idx*10)+10))
+				_epoch_index = int(((step_idx*50)+50))
 
-				scenariob.fit(model, X_final, y_train, nb_epoch=10)
+				scenariob.fit(model, X_final, y_train, nb_epoch=50)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
@@ -564,11 +564,11 @@ class FinCapstone():
 
 			model = scenariob.finetune_model(model)
 			print("Training {}".format(ticker))
-			for step_idx in np.arange(nb_epoch / 10):
+			for step_idx in np.arange(nb_epoch / 50):
 				_start = datetime.datetime.now()
-				_epoch_index = int(((step_idx*10)+10))
+				_epoch_index = int(((step_idx*50)+50))
 
-				scenariob.fit(model, X_final, y_train, nb_epoch=10)
+				scenariob.fit(model, X_final, y_train, nb_epoch=50)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
@@ -766,7 +766,6 @@ class FinCapstone():
 	def load_scenarioa_labels(self, ticker, parseDate=True):
 		
 		return scenarioa.load_scenarioa_labels(ticker, parseDate)
-
 
 	def store_scenariob_features(self, features_df, ticker):
 		

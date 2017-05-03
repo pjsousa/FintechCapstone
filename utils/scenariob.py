@@ -167,7 +167,6 @@ def create_model(n_tickers, side):
 
 	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 
 	model.add(Dense(4 * n_tickers, kernel_initializer='normal'))
 
@@ -192,7 +191,6 @@ def finetune_model(model):
 
 	for layer in model.layers: layer.trainable=False
 
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 
