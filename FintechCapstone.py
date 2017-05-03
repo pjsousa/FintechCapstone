@@ -374,7 +374,7 @@ class FinCapstone():
 
 		for step_idx in np.arange(nb_epoch / 50):
 			_start = datetime.datetime.now()
-			_epoch_index = ((step_idx*50)+50)
+			_epoch_index = int(((step_idx*50)+50))
 
 			baseline_model.fit(model, X_train, y_train, 50)
 
@@ -446,7 +446,7 @@ class FinCapstone():
 		
 		for step_idx in np.arange(nb_epoch / 10):
 			_start = datetime.datetime.now()
-			_epoch_index = ((step_idx*10)+10)
+			_epoch_index = int(((step_idx*10)+10))
 
 			scenarioa.fit(model, X_train, y_train, nb_epoch=10)
 			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
@@ -524,7 +524,7 @@ class FinCapstone():
 			print("Training Market")
 			for step_idx in np.arange(nb_epoch / 10):
 				_start = datetime.datetime.now()
-				_epoch_index = ((step_idx*10)+10)
+				_epoch_index = int(((step_idx*10)+10))
 
 				scenariob.fit(model, X_final, y_train, nb_epoch=10)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
@@ -566,7 +566,7 @@ class FinCapstone():
 			print("Training {}".format(ticker))
 			for step_idx in np.arange(nb_epoch / 10):
 				_start = datetime.datetime.now()
-				_epoch_index = ((step_idx*10)+10)
+				_epoch_index = int(((step_idx*10)+10))
 
 				scenariob.fit(model, X_final, y_train, nb_epoch=10)
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
