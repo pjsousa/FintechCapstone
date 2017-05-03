@@ -545,7 +545,6 @@ class FinCapstone():
 		else:
 			X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=ticker, return_type="numpy")
 			
-
 			try:
 				pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
