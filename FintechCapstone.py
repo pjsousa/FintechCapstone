@@ -372,11 +372,11 @@ class FinCapstone():
 		model = baseline_model.create_model()
 		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
-		for step_idx in np.arange(nb_epoch / 50):
+		for step_idx in np.arange(nb_epoch / 2):
 			_start = datetime.datetime.now()
-			_epoch_index = int(((step_idx*50)+50))
+			_epoch_index = int(((step_idx*2)+2))
 
-			baseline_model.fit(model, X_train, y_train, 50)
+			baseline_model.fit(model, X_train, y_train, 2)
 
 			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))

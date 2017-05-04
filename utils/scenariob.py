@@ -185,9 +185,6 @@ def finetune_model(model):
 	model.pop()
 	model.pop()
 	model.pop()
-	model.pop()
-	model.pop()
-	model.pop()
 
 	for layer in model.layers: layer.trainable=False
 
