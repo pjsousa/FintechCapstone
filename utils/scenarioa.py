@@ -280,12 +280,13 @@ def create_model(n_tickers):
 	model = Sequential()
 
 	model.add(Conv2D(64, (3, 3), input_shape=(29, n_tickers, 1), activation="relu"))
-	kutils.ConvBlock(1, 64, model, add_maxpooling=False)
-	kutils.ConvBlock(2, 128, model, add_maxpooling=False)
-	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
+	kutils.ConvBlock(1, 64, model, add_maxpooling=True)
+	kutils.ConvBlock(2, 128, model, add_maxpooling=True)
+	kutils.ConvBlock(3, 256, model, add_maxpooling=True)
 
+	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
 	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
-	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
+
 
 	model.add(Flatten())
 
@@ -306,7 +307,7 @@ def fit(model, X_train, y_train, nb_epoch=1):
 	X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], X_train.shape[2], 1)
 
 	## Fit
-	model.fit(X_train, y_train, epochs=nb_epoch, batch_size=32, verbose=1)
+	model.fit(X_train, y_train, epochs=nb_epoch, batch_size=8, verbose=1)
 
 	return model
 
