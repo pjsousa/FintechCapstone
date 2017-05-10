@@ -13,13 +13,15 @@ TIER2_DATA_PATH = "{}/C_TIER2".format(DATA_PATH)
 
 
 _EXCHANGES = [
-	"nasdaq"
+	#"nasdaq"
+	"nasdaq100"
 	#,"nyse"
 	#,"amex"
 ]
 
 _URLS = dict()
 _URLS["nasdaq"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=nasdaq&render=download"
+_URLS["nasdaq100"] = "http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx?render=download" # Nasdaq100
 _URLS["nyse"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=nyse&render=download"
 _URLS["amex"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=amex&render=download"
 
