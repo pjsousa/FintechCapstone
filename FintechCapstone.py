@@ -5,6 +5,7 @@ import uuid
 import datetime
 import pandas as pd
 import numpy as np
+import itertools
 from functools import partial
 from dateutil import parser as dtparser
 from sklearn.externals import joblib
@@ -14,6 +15,7 @@ from utils import datapipe
 from utils import baseline_model
 from utils import scenarioa
 from utils import scenariob
+from utils import scenarioc
 from utils import paths_helper as paths
 
 import argparse
@@ -42,6 +44,7 @@ class FinCapstone():
 				train_from="2010-01-01",
 				train_until="2015-12-31",
 				test_from="2016-01-01",
+				encode_workpages=7,
 				bins=None,):
 
 		self.ticker_list = None
@@ -57,12 +60,17 @@ class FinCapstone():
 		self.test_from = dtparser.parse(test_from)
 		self.model_name = model_name
 		self.scenario = scenario
+		self.encode_workpages = encode_workpages
 		
 		self.trialconfig_df = None
 		self.fetchstatus_df = None
 		self.featureengineer_status_df = None
 		self.train_status_df = None
 		self.eval_status_df = None
+		self.encode_status_df = None
+
+		for i in range(encode_workpages):
+			self.__dict__["encode_status_df_%d" % i] = None
 
 
 		self._start = None
@@ -102,6 +110,8 @@ class FinCapstone():
 		if reset_status:
 			self.reset_status_files()
 			self.store_status_files()
+			for i in range(encode_workpages):
+				self.store_encodestatus_files(i)
 		else:
 			self.load_status_files()
 
@@ -181,6 +191,13 @@ class FinCapstone():
 
 					work_df = scenariob.calc_labels(itr_df, verbose=True)
 					self.store_scenariob_labels(work_df, itr_ticker)
+				elif scenario == "scenarioc":
+					itr_df.set_index("Date", inplace=True)
+					work_df = scenarioc.calc_features(itr_df, verbose=True)
+					self.store_scenarioc_features(work_df, itr_ticker)
+
+					work_df = scenarioc.calc_labels(itr_df, verbose=True)
+					self.store_scenarioc_labels(work_df, itr_ticker)
 				else:
 					print("Invalid Feature Set.")
 
@@ -198,6 +215,55 @@ class FinCapstone():
 
 		self.trialconfig_df.loc["featureengineer_status","value"] = "ERRORS" if iserror else "COMPLETE"
 		self.store_status_files()
+
+
+
+	def feature_encoding(self, scenario=None, work_page=None):
+		scenario = self.scenario if scenario is None else scenario
+		
+		number_pages = self.encode_workpages
+
+		_status_df = self.encode_status_df
+		
+		tickers = self.valid_ticker_list()
+		dates = [ datetime.datetime.strftime(x, "%Y-%m-%d") for x in pd.date_range(start=self.date_from, end=self.date_to)]
+
+		_todo = [tickers, dates, [100], [60], [self.model_name]]
+		_todo = [x for x in itertools.product(*_todo)]
+
+		# if work_page is defined, slice by the given page
+		if not(work_page is None):
+			page_size = int(np.ceil(len(_todo) / number_pages))
+			_todo = _todo[page_size*work_page:page_size*(work_page + 1)]
+			_status_df = self.__dict__["encode_status_df_%d" % work_page]
+			print("Encoding page %d" % work_page)
+
+		itr_keys = ["itr_ticker", "itr_date", "n_states", "timespans"]
+
+		for itr in _todo:
+			_start = datetime.datetime.now()
+			try:
+				mtf = scenarioc.transform_features(*itr)
+
+				self.store_scenarioc_encodings(mtf, itr[0], self.model_name, itr[1])
+				print("Done. {} {}".format(itr[0], itr[1]))
+
+				
+				_status_df.loc[(itr[0], itr[1]), "start"] = _start
+				_status_df.loc[(itr[0], itr[1]), "end"] = datetime.datetime.now()
+				_status_df.loc[(itr[0], itr[1]), "status"] = "OK"
+
+				
+
+			except KeyError:
+				print("KeyError {}.".format(itr))
+			except Exception as e:
+				_status_df.loc[(itr[0], itr[1]), "start"] = _start
+				_status_df.loc[(itr[0], itr[1]), "end"] = datetime.datetime.now()
+				_status_df.loc[(itr[0], itr[1]), "status"] = "NOK"
+				_status_df.loc[(itr[0], itr[1]), "msg"] = str(e)
+
+			self.store_encodestatus_files(work_page)
 
 
 
@@ -686,11 +752,30 @@ class FinCapstone():
 		eval_status_df["msg"] = None
 		eval_status_df.set_index(["ticker", "epochs"], inplace=True)
 
+		encode_status_df = pd.DataFrame()
+		encode_status_df["ticker"] = "PADLINE"
+		encode_status_df["date"] = None
+		encode_status_df["status"] = None
+		encode_status_df["start"] = None
+		encode_status_df["end"] = None
+		encode_status_df["msg"] = None
+		encode_status_df.set_index(["ticker", "date"], inplace=True)
+
 		self.trialconfig_df = trialconfig_df
 		self.fetchstatus_df = fetchstatus_df
 		self.featureengineer_status_df = featureengineer_status_df
 		self.train_status_df = train_status_df
 		self.eval_status_df = eval_status_df
+
+		self.encode_status_df = encode_status_df
+		for i in range(self.encode_workpages):
+			self.__dict__["encode_status_df_%d" % i] = encode_status_df.copy()
+		
+	def store_encodestatus_files(self, work_page):
+		self.encode_status_df.to_csv("{}_encode_status_df.tmp".format(self.model_name))
+
+		if(not(work_page is None)):
+			self.__dict__["encode_status_df_%d" % work_page].to_csv("{}_encode_status_df_{}.tmp".format(self.model_name, work_page))
 
 	def store_status_files(self):
 		self.trialconfig_df.to_csv("{}_trialconfig.tmp".format(self.model_name))
@@ -698,6 +783,7 @@ class FinCapstone():
 		self.featureengineer_status_df.to_csv("{}_featureengineer_status.tmp".format(self.model_name))
 		self.train_status_df.to_csv("{}_train_status.tmp".format(self.model_name))
 		self.eval_status_df.to_csv("{}_eval_status.tmp".format(self.model_name))
+		self.encode_status_df.to_csv("{}_encode_status_df.tmp".format(self.model_name))
 
 	def load_status_files(self):
 		self.trialconfig_df = pd.read_csv("{}_trialconfig.tmp".format(self.model_name))
@@ -705,12 +791,18 @@ class FinCapstone():
 		self.featureengineer_status_df = pd.read_csv("{}_featureengineer_status.tmp".format(self.model_name))
 		self.train_status_df = pd.read_csv("{}_train_status.tmp".format(self.model_name))
 		self.eval_status_df = pd.read_csv("{}_eval_status.tmp".format(self.model_name))
+		self.encode_status_df = pd.read_csv("{}_encode_status_df.tmp".format(self.model_name))
+		for i in range(self.encode_workpages):
+			self.__dict__["encode_status_df_%d" % i] = pd.read_csv("{}_encode_status_df_{}.tmp".format(self.model_name, i))
 
 		self.trialconfig_df.set_index("property", inplace=True)
 		self.fetchstatus_df.set_index("ticker", inplace=True)
 		self.featureengineer_status_df.set_index("ticker", inplace=True)
 		self.train_status_df.set_index("ticker", inplace=True)
 		self.eval_status_df.set_index(["ticker", "epochs"], inplace=True)
+		self.encode_status_df.set_index(["ticker", "date"], inplace=True)
+		for i in range(self.encode_workpages):
+			self.__dict__["encode_status_df_%d" % i].set_index(["ticker", "date"], inplace=True)
 
 	#####################
 	## Storage Helpers ##
@@ -782,6 +874,31 @@ class FinCapstone():
 	def load_scenariob_labels(self, ticker, parseDate=True):
 		
 		return scenariob.load_scenariob_labels(ticker, parseDate)
+
+	def store_scenarioc_features(self, features_df, ticker):
+		
+		return scenarioc.store_scenarioc_features(features_df, ticker)
+
+	def load_scenarioc_features(self, ticker, parseDate=True):
+		
+		return scenarioc.load_scenarioc_features(ticker, parseDate)
+
+
+	def store_scenarioc_encodings(self, feature_data, ticker, modelname, date):
+		
+		return scenarioc.store_scenarioc_encodings(feature_data, ticker, modelname, date)
+
+	def load_scenarioc_encodings(self, ticker, modelname, date):
+		
+		return scenarioc.load_scenarioc_encodings(ticker, modelname, date)
+
+	def store_scenarioc_labels(self, features_df, ticker):
+		
+		return scenarioc.store_scenarioc_labels(features_df, ticker)
+
+	def load_scenarioc_labels(self, ticker, parseDate=True):
+		
+		return scenarioc.load_scenarioc_labels(ticker, parseDate)
 
 
 	#####################

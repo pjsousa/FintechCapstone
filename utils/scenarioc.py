@@ -54,7 +54,7 @@ def gramian_anguler_field(serie, min_val, max_val):
 
 	n = serie.shape[0]
 	min_val = serie.min() if min_val is None else min_val
-	max_val = serie.min() if max_val is None else max_val
+	max_val = serie.max() if max_val is None else max_val
 
 	serie_normalized = ((serie - max_val) + (serie - min_val())) / (max_val - min_val())
 
@@ -68,7 +68,7 @@ def gramian_anguler_field(serie, min_val, max_val):
 
 def markov_transition_matrix(serie, n_states, min_val, max_val):
 	min_val = serie.min() if min_val is None else min_val
-	max_val = serie.min() if max_val is None else max_val
+	max_val = serie.max() if max_val is None else max_val
 
 	## Digitize the column and create the "next state" by shifting it
 	states = pd.DataFrame()
@@ -88,7 +88,8 @@ def markov_transition_matrix(serie, n_states, min_val, max_val):
 	states = states.pivot("state_in", "state_out").fillna(0)
 
 	## get the frequency 
-	states = states / states_count.values.flatten()
+	#states = states / states_count.values.flatten()
+	states.divide(states_count.values.flatten(), axis=0)
 
 	## drop the dummy variable just so our output look nicer
 	states.columns = states.columns.droplevel(0)
@@ -102,7 +103,7 @@ def markov_transition_matrix(serie, n_states, min_val, max_val):
 
 def markov_transition_field(serie, n_states, min_val, max_val):
 	min_val = serie.min() if min_val is None else min_val
-	max_val = serie.min() if max_val is None else max_val
+	max_val = serie.max() if max_val is None else max_val
 
 	W = markov_transition_matrix(serie, n_states, min_val, max_val)
 
@@ -125,10 +126,42 @@ def markov_transition_field(serie, n_states, min_val, max_val):
 	return M
 
 
-def calc_features(raw_df, verbose=True, normalize=False):
-	return scenarioa.calc_features(raw_df, verbose, normalize)
+def transform_features(ticker, itr_date, n_states, timespan, modelname):
+	_result = []
 
-å
+	features_df = load_scenarioc_features(ticker, parseDate=False)
+	features_df.set_index("Date", inplace=True)
+
+	_idx = features_df.index.get_loc(itr_date)
+
+	if _idx >= timespan:
+		for itr_serie in features_df.columns.tolist():
+			mtf = markov_transition_field(features_df.iloc[_idx-timespan:_idx][itr_serie], n_states, features_df[itr_serie].min(), features_df[itr_serie].max())
+			_result.append(mtf.values)
+
+		_result = np.array(_result)
+		_result = _result.reshape(_result.shape[1],_result.shape[2],_result.shape[0])
+	else:
+		_result = None
+
+
+	return _result
+
+
+def calc_features(raw_df, verbose=True):
+	result_df = pd.DataFrame()
+
+	result_df["Close"] = raw_df["Close"]
+
+	result_df["RSI_60"] = vectorized_funs.rsiFunc(raw_df["Close"], 60)
+
+	daily_return = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
+
+	result_df["OBV"] = vectorized_funs.onbalancevolumeFunc(daily_return, raw_df["Volume"])
+
+	return result_df
+
+
 
 def calc_labels(raw_df, verbose=True):
 	return scenarioa.calc_labels(raw_df, verbose)
@@ -229,10 +262,10 @@ def prepare_problemspace(ticker_list, train_from, train_until, test_from, normal
 	return X_train_pnl, y_train_pnl, X_test_pnl, y_test_pnl
 
 
-def create_model(n_tickers, side):
+def create_model(side, channels):
 	model = Sequential()
 
-	model.add(Conv2D(64, (3, 3), input_shape=(side, side, 1), activation="relu"))
+	model.add(Conv2D(64, (3, 3), input_shape=(side, side, channels), activation="relu"))
 	kutils.ConvBlock(1, 64, model, add_maxpooling=True)
 	kutils.ConvBlock(2, 128, model, add_maxpooling=True)
 	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
@@ -245,10 +278,10 @@ def create_model(n_tickers, side):
 	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
 
-	model.add(Dense(4 * n_tickers, kernel_initializer='normal'))
+	model.add(Dense(4, kernel_initializer='normal'))
 
 	# Compile model
-	model.compile(loss='mean_squared_error', optimizer='adam')
+	model.compile(loss='mean_squared_error', optimizer='rmsprop')
 	return model
 
 
@@ -338,15 +371,15 @@ def evaluate(model, X_test, y_test, return_type="dict"):
 	return _r
 
 
-def store_scenariob_features(features_df, ticker):
-	features_df.to_csv("{}/{}_scenariob_X.csv".format(paths.TRIALA_DATA_PATH, ticker))
+def store_scenarioc_features(features_df, ticker):
+	features_df.to_csv("{}/{}_scenarioc_X.csv".format(paths.TRIALA_DATA_PATH, ticker))
 	return True
 
-def load_scenariob_features(ticker, parseDate=True):
+def load_scenarioc_features(ticker, parseDate=True):
 	_r = None
 
 	try:
-		_r = pd.read_csv("{}/{}_scenariob_X.csv".format(paths.TRIALA_DATA_PATH, ticker))
+		_r = pd.read_csv("{}/{}_scenarioc_X.csv".format(paths.TRIALA_DATA_PATH, ticker))
 
 		if parseDate:
 			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
@@ -356,16 +389,30 @@ def load_scenariob_features(ticker, parseDate=True):
 
 	return _r
 
-def store_scenariob_labels(features_df, ticker):
-	features_df.to_csv("{}/{}_scenariob_Y.csv".format(paths.TRIALA_DATA_PATH, ticker))
-
+def store_scenarioc_encodings(feature_data, ticker, modelname, date):
+	np.save("{}/MTFIELD_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, modelname, date), feature_data)
 	return True
 
-def load_scenariob_labels(ticker, parseDate=True):
+def load_scenarioc_encodings(ticker, modelname, date):
 	_r = None
 
 	try:
-		_r = pd.read_csv("{}/{}_scenariob_Y.csv".format(paths.TRIALA_DATA_PATH, ticker))
+		_r = np.load("{}/MTFIELD_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, modelname, date))
+	except:
+		_r = None
+
+	return _r
+
+def store_scenarioc_labels(features_df, ticker):
+	features_df.to_csv("{}/{}_scenarioc_Y.csv".format(paths.TRIALA_DATA_PATH, ticker))
+
+	return True
+
+def load_scenarioc_labels(ticker, parseDate=True):
+	_r = None
+
+	try:
+		_r = pd.read_csv("{}/{}_scenarioc_Y.csv".format(paths.TRIALA_DATA_PATH, ticker))
 
 		if parseDate:
 			_r["Date"] = pd.to_datetime(_r["Date"], infer_datetime_format=True)
