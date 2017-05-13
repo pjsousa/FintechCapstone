@@ -26,8 +26,9 @@ def exec_fetch(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-#		ticker_list=["GLW","HIMX","YHOO"]		,scenario="scenarioc"
+#		ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
+		,encode_workpages=10
 		, model_name="FullScenarioC"
 		, ticker_list_samplesize=4000
 		, timespan=timespan
@@ -50,6 +51,7 @@ def exec_fengineer(do_fetch=True, do_engineering=True):
 	trial = FinCapstone(
 		#ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
+		,encode_workpages=10
 		, model_name="FullScenarioC"
 		, ticker_list_samplesize=4000
 		, timespan=timespan
@@ -72,6 +74,7 @@ def exec_training(do_fetch=True, do_engineering=True):
 	trial = FinCapstone(
 		#ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
+		,encode_workpages=10
 		, model_name="FullScenarioC"
 		, ticker_list_samplesize=4000
 		, timespan=timespan
@@ -95,6 +98,7 @@ def exec_fencode(work_page):
 	trial = FinCapstone(
 		#ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
+		,encode_workpages=10
 		, model_name="FullScenarioC"
 		, ticker_list_samplesize=4000
 		, timespan=timespan

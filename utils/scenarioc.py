@@ -17,6 +17,8 @@ from keras.layers.convolutional import Conv2D
 from sklearn.metrics import r2_score
 from sklearn.metrics import accuracy_score
 
+import itertools
+
 
 import math
 
@@ -89,7 +91,7 @@ def markov_transition_matrix(serie, n_states, min_val, max_val):
 
 	## get the frequency 
 	#states = states / states_count.values.flatten()
-	states.divide(states_count.values.flatten(), axis=0)
+	states = states.divide(states_count.values.flatten(), axis=0)
 
 	## drop the dummy variable just so our output look nicer
 	states.columns = states.columns.droplevel(0)
@@ -168,98 +170,58 @@ def calc_labels(raw_df, verbose=True):
 
 
 
-def prepare_problemspace(ticker_list, train_from, train_until, test_from, normalize=True, ticker=None, return_type="pandas"):
-	X_train_dict = dict()
-	y_train_pnl = dict()
-	y_train_dict = dict()
-	X_test_dict = dict()
-	y_test_pnl = dict()
-	y_test_dict = dict()
+def prepare_problemspace(ticker_list, date_from, date_until, model_name, normalize=True, return_type="pandas"):
+	X = []
+	y = []
 
-	marketlabels = True if ticker is None else False
+	labels_df = None
+	labels_ticker = None
+	date_idx = -1
+	current_encoding = None
+	ticker_hasdate = None
+	encoding_exists = None
+	enconding_ctx = []
 
-	itr_df = None
-	X_train_pnl = None
-	y_train_pnl = None
-	X_test_pnl = None
-	y_test_pnl = None
+	tickers = ticker_list
 
-	for itr_ticker in ticker_list:
-		## Load Features
-		itr_df = load_scenariob_features(itr_ticker, parseDate=True)
-		itr_df.set_index("Date", inplace=True)
+	dates = pd.date_range(date_from, date_until)
 
-		# Split Features into Train and Test
-		X_train_dict[itr_ticker] = itr_df.loc[train_from:train_until, :]
-		X_test_dict[itr_ticker] = itr_df.loc[test_from:, :]
+	_todo = [tickers, dates]
+	#_todo = [x for x in itertools.product(*_todo)]
 
-		## Load Labels
-		itr_df = load_scenariob_labels(itr_ticker, parseDate=True)
-		itr_df.set_index("Date", inplace=True)
+	for _it in itertools.product(*_todo):
+		itr = dict(zip(["ticker", "date"], _it))
 
-		# Split Features into Train and Test
-		y_train_dict[itr_ticker] = itr_df.loc[train_from:train_until, :]
-		y_test_dict[itr_ticker] = itr_df.loc[test_from:, :]
+		if labels_ticker != itr["ticker"]:
+			labels_ticker = itr["ticker"]
+			labels_df = load_scenarioc_labels(itr["ticker"], parseDate=True)
+			labels_df.set_index("Date", inplace=True)
 
-	# Create Panel for Train Features
-	X_train_pnl = pd.Panel(X_train_dict)
-	X_train_pnl = X_train_pnl.swapaxes(0,1).swapaxes(2,1)
+		try:
+			date_idx = labels_df.index.get_loc(itr["date"])
+			ticker_hasdate = True
+		except KeyError:
+			ticker_hasdate = False
 
-	# Create Panel for Test Features
-	X_test_pnl = pd.Panel(X_test_dict)
-	X_test_pnl = X_test_pnl.swapaxes(0,1).swapaxes(2,1)
+		encoding_exists = False
 
+		if ticker_hasdate:
+			current_encoding = load_scenarioc_encodings(itr["ticker"], model_name, datetime.datetime.strftime(itr["date"], "%Y-%m-%d"))
+			encoding_exists = False if (len(current_encoding.shape) == 0) else True
 
-	if marketlabels: 
-		# Create Panel for Train Labels
-		y_train_pnl = pd.Panel(y_train_dict)
-		y_train_pnl = y_train_pnl.swapaxes(0,1)
-		y_train_pnl = y_train_pnl.to_frame(filter_observations=False).T
+			if encoding_exists:
+				enconding_ctx.append(_it)
+				X.append(current_encoding)
+				y.append(labels_df.iloc[date_idx])
 
-		# Create Panel for Test Labels
-		y_test_pnl = pd.Panel(y_test_dict)
-		y_test_pnl = y_test_pnl.swapaxes(0,1)
-		y_test_pnl = y_test_pnl.to_frame(filter_observations=False).T
-	else:
-		## Load Labels
-		itr_df = load_scenariob_labels(ticker, parseDate=True)
-		itr_df.set_index("Date", inplace=True)
+	X = np.array(X)
+	y = np.array(y)
 
-		# Split Features into Train and Test
-		y_train_pnl = itr_df.loc[train_from:train_until, :]
-		y_test_pnl = itr_df.loc[test_from:, :]
-
-		X_train_pnl = X_train_pnl.loc[y_train_pnl.index.tolist(),::]
-		X_test_pnl = X_test_pnl.loc[y_test_pnl.index.tolist(),::]
+	y = np.where(~np.isnan(y),y, 0.0)
+	y = np.where(~np.isinf(y),y, 0.0)
 
 
-	## Normalize Close
-	if normalize:
-		X_train_pnl.loc[:,"Close",:] = X_train_pnl.loc[:,"Close",:] / X_train_pnl.loc[:,"Close",:].max().max()
-		X_test_pnl.loc[:,"Close",:] = X_test_pnl.loc[:,"Close",:] / X_train_pnl.loc[:,"Close",:].max().max()
-
-
-	# Prepare output when necessary
-	if return_type == "numpy":
-		X_train_pnl = X_train_pnl.values
-		X_test_pnl = X_test_pnl.values
-		y_train_pnl = y_train_pnl.values
-		y_test_pnl = y_test_pnl.values
-
-		X_train_pnl = np.where(~np.isnan(X_train_pnl),X_train_pnl, 0.0)
-		X_train_pnl = np.where(~np.isinf(X_train_pnl),X_train_pnl, 0.0)
-
-		X_test_pnl = np.where(~np.isnan(X_test_pnl),X_test_pnl, 0.0)
-		X_test_pnl = np.where(~np.isinf(X_test_pnl),X_test_pnl, 0.0)
-
-		y_train_pnl = np.where(~np.isnan(y_train_pnl),y_train_pnl, 0.0)
-		y_train_pnl = np.where(~np.isinf(y_train_pnl),y_train_pnl, 0.0)
-
-		y_test_pnl = np.where(~np.isnan(y_test_pnl),y_test_pnl, 0.0)
-		y_test_pnl = np.where(~np.isinf(y_test_pnl),y_test_pnl, 0.0)
-
-
-	return X_train_pnl, y_train_pnl, X_test_pnl, y_test_pnl
+	return X, y, enconding_ctx
 
 
 def create_model(side, channels):

@@ -45,7 +45,7 @@ class FinCapstone():
 				train_until="2015-12-31",
 				test_from="2016-01-01",
 				encode_workpages=7,
-				bins=None,):
+				bins=None):
 
 		self.ticker_list = None
 		self.timespan = None
