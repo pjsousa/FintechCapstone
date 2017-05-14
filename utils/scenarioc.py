@@ -247,66 +247,16 @@ def create_model(side, channels):
 	return model
 
 
-def finetune_model(model):
-	_nlayers = len(model.layers)
-
-	model.pop()
-	model.pop()
-	model.pop()
-	model.pop()
-	model.pop()
-	model.pop()
-	model.pop()
-
-	for layer in model.layers: layer.trainable=False
-
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
-
-	model.add(Dense(4, kernel_initializer='normal'))
-
-	# Compile model
-	model.compile(loss='mean_squared_error', optimizer='adam')
-
-	assert _nlayers == len(model.layers), \
-		"scenariob.finetune result does not have the same depth as the original"
-
-	return model
-
-
-
-def dim_reduction(features, n_components, pca=None):
-	X_reshaped = features.reshape(features.shape[0], features.shape[1]*features.shape[2])
-
-	if pca is None:
-		pca = PCA(n_components=n_components)
-		pca.fit(X_reshaped)
-
-	X_transformed = pca.transform(X_reshaped)
-
-	_sroot =math.sqrt(X_transformed.shape[1])
-	_sd = math.ceil(_sroot)
-
-	_sq = _sd * _sd
-
-	_tail = np.zeros(shape=(X_transformed.shape[0], _sq - X_transformed.shape[1]))
-	_tail = _tail + X_transformed.mean()
-
-	X_final = np.append(X_transformed, _tail, axis=1)
-	X_final = X_final.reshape(X_final.shape[0], _sd, _sd, 1)
-
-	return X_final, pca
-
 
 
 def fit(model, X_reduced, y_train, nb_epoch=1):
 
 
 		## Create a new dimension for the "channel"
-		X = X_reduced.reshape(X_reduced.shape[0], X_reduced.shape[1], X_reduced.shape[2], 1)
+		X = X_reduced
 
 		## Fit
-		model.fit(X, y_train, epochs=nb_epoch, batch_size=32, verbose=1)
+		model.fit(X, y_train, epochs=nb_epoch, batch_size=128, verbose=1)
 
 		return model
 
@@ -314,7 +264,7 @@ def fit(model, X_reduced, y_train, nb_epoch=1):
 def evaluate(model, X_test, y_test, return_type="dict"):
 	_r = dict()
 
-	X = X_test.reshape(X_test.shape[0], X_test.shape[1], X_test.shape[2], 1)
+	X = X_test
 
 	y_pred = model.predict(X, verbose=0)
 	gain_test = (y_test > 0.0) * 1.0
@@ -327,8 +277,6 @@ def evaluate(model, X_test, y_test, return_type="dict"):
 		_r["r_squared"] = [_r["r_squared"]]
 		_r["accuracy"] = [_r["accuracy"]]
 		_r = pd.DataFrame.from_dict(_r)
-
-	del X
 
 	return _r
 

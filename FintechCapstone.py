@@ -319,6 +319,10 @@ class FinCapstone():
 						self.trialconfig_df.loc["modeltrainmarket_status","value"] = "COMPLETE"
 					
 					model = self.train_scenariob(itr_ticker, nb_epoch)
+				elif self.scenario == "scenarioc":
+					
+					model = self.train_scenarioc(nb_epoch)
+
 				else:
 					model = None
 
@@ -686,6 +690,76 @@ class FinCapstone():
 
 		return _r
 
+
+
+	def train_scenarioc(self, nb_epoch=100):
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+		n_tickers = None
+		results = None
+		iserror_pca = False
+		X_final = None
+		pca = None
+		model = None
+		ticker = None
+
+		if ticker is None:
+			print("Loading Train")
+			X_train, y_train, ctx_train = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.model_name)
+			print("Loading Test")
+			X_test, y_test, ctx_test = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.test_from, self.date_to, self.model_name)
+
+			X_train = (X_train - X_train.mean()) / X_train.std()
+			X_test = (X_test - X_train.mean()) / X_train.std()
+
+			model = scenarioc.create_model(60, 3)
+
+			print("Training Model")
+			for step_idx in np.arange(nb_epoch / 1):
+				_start = datetime.datetime.now()
+				_epoch_index = int(((step_idx*1)+1))
+
+				scenarioc.fit(model, X_train, y_train, nb_epoch=1)
+				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+
+				results = self.evaluate_scenarioc(ticker, model, (X_train, y_train, X_test, y_test), pca)
+				print(results)
+
+				self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
+				self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
+				self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
+				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
+				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+
+				self.store_status_files()
+		return model
+
+
+
+	def evaluate_scenarioc(self, ticker, model, data):
+		_r = [None] * 2
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+
+		X_train = data[0]
+		y_train = data[1]
+		X_test = data[2]
+		y_test = data[3]
+
+		print("Evaluating {}".format(ticker))
+		
+		_r[0] = scenarioc.evaluate(model, X_train, y_train, return_type="dict")
+
+		_r[1] = scenariob.evaluate(model, X_test, y_test, return_type="dict")
+
+		return _r
 
 	##################
 	## Status Files ##
