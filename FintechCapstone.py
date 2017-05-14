@@ -725,7 +725,7 @@ class FinCapstone():
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-				results = self.evaluate_scenarioc(ticker, model, (X_train, y_train, X_test, y_test), pca)
+				results = self.evaluate_scenarioc(ticker, model, (X_train, y_train, X_test, y_test))
 				print(results)
 
 				self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
