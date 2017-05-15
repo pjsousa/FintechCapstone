@@ -714,6 +714,13 @@ class FinCapstone():
 			X_train = (X_train - X_train.mean()) / X_train.std()
 			X_test = (X_test - X_train.mean()) / X_train.std()
 
+
+
+			y_train = (y_train > 0.0) * 1.0		### THIS DISCRETIZES THE LABELS
+			y_test = (y_test > 0.0) * 1.0  		### THIS DISCRETIZES THE LABELS
+
+
+
 			model = scenarioc.create_model(60, 3)
 
 			print("Training Model")
