@@ -757,7 +757,7 @@ class FinCapstone():
 		
 		_r[0] = scenarioc.evaluate(model, X_train, y_train, return_type="dict")
 
-		_r[1] = scenariob.evaluate(model, X_test, y_test, return_type="dict")
+		_r[1] = scenarioc.evaluate(model, X_test, y_test, return_type="dict")
 
 		return _r
 

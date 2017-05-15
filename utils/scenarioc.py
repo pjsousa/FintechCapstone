@@ -266,7 +266,7 @@ def evaluate(model, X_test, y_test, return_type="dict"):
 
 	X = X_test
 
-	y_pred = model.predict(X, verbose=0)
+	y_pred = model.predict(X, verbose=1)
 	gain_test = (y_test > 0.0) * 1.0
 	gain_pred = (y_pred > 0.0) * 1.0
 
