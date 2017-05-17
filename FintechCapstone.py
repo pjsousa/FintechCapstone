@@ -21,6 +21,8 @@ from utils import paths_helper as paths
 import argparse
 import os
 
+from sklearn.model_selection import ShuffleSplit
+
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -692,63 +694,76 @@ class FinCapstone():
 
 
 
-	def train_scenarioc(self, nb_epoch=100):
+	def train_scenarioc(self, nb_epoch=100, useSample=True, train_forlabel=0):
 		X_train = None
 		y_train = None
 		X_test = None
 		y_test = None
-		n_tickers = None
 		results = None
-		iserror_pca = False
-		X_final = None
-		pca = None
 		model = None
-		ticker = None
 
-		if ticker is None:
-			print("Loading Train")
-			X_train, y_train, ctx_train = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.model_name)
-			print("Loading Test")
-			X_test, y_test, ctx_test = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.test_from, self.date_to, self.model_name)
+		print("Loading Train")
+		X_train, y_train, ctx_train = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.model_name, useSample)
+		print("Loading Test")
+		X_test, y_test, ctx_test = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.test_from, self.date_to, self.model_name, useSample)
 
-			X_train = (X_train - X_train.mean()) / X_train.std()
-			X_test = (X_test - X_train.mean()) / X_train.std()
-
+		## Normalize Features
+		X_train = (X_train - X_train.mean()) / X_train.std()
+		X_test = (X_test - X_train.mean()) / X_train.std()
 
 
-			y_train = (y_train > 0.0) * 1.0		### THIS DISCRETIZES THE LABELS
-			y_test = (y_test > 0.0) * 1.0  		### THIS DISCRETIZES THE LABELS
+		## Normalize Labels
+		y_train = np.log(np.abs(y_train)) * np.sign(y_train)
+		y_test = np.log(np.abs(y_test)) * np.sign(y_test)
+		y_train = np.where(~np.isnan(y_train), y_train, 0.0)
+		y_train = np.where(~np.isinf(y_train), y_train, 0.0)
+		y_test = np.where(~np.isnan(y_test), y_test, 0.0)
+		y_test = np.where(~np.isinf(y_test), y_test, 0.0)
 
 
+		## Only use a subsample of our data
+		if useSample:
+			rs = ShuffleSplit(n_splits=1, train_size=.20)
+			for used_sample, unused_saple in rs.split(X_train):
+				X_train = X_train[used_sample]
+				y_train = y_train[used_sample]
+			
+			# for used_sample, unused_saple in rs.split(X_test):
+			# 	X_test = X_test[used_sample]
+			# 	y_test = y_test[used_sample]
 
-			model = scenarioc.create_model(60, 3)
+		y_train = y_train[ : , train_forlabel]
+		y_test = y_test[ : , train_forlabel]
 
-			print("Training Model")
-			for step_idx in np.arange(nb_epoch / 1):
-				_start = datetime.datetime.now()
-				_epoch_index = int(((step_idx*1)+1))
+		model = scenarioc.create_model(60, 3, 1)
 
-				scenarioc.fit(model, X_train, y_train, nb_epoch=1)
-				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
-				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+		print("Training Model")
+		for step_idx in np.arange(nb_epoch / 1):
+			_start = datetime.datetime.now()
+			_epoch_index = int(((step_idx*1)+1))
 
-				results = self.evaluate_scenarioc(ticker, model, (X_train, y_train, X_test, y_test))
-				print(results)
+			scenarioc.fit(model, X_train, y_train, nb_epoch=1)
+			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
+			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-				self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
-				self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
-				self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
-				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
-				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
-				self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-				self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+			results = self.evaluate_scenarioc(model, (X_train, y_train, X_test, y_test))
+			print(results)
 
-				self.store_status_files()
+			self.eval_status_df.loc[("Nan", _epoch_index), "status"] = "COMPLETE"
+			self.eval_status_df.loc[("Nan", _epoch_index), "start"] = _start
+			self.eval_status_df.loc[("Nan", _epoch_index), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[("Nan", _epoch_index), "r_squared"] = results[0]["r_squared"]
+			self.eval_status_df.loc[("Nan", _epoch_index), "accuracy"] = results[0]["accuracy"]
+			self.eval_status_df.loc[("Nan", _epoch_index), "r_squared_test"] = results[1]["r_squared"]
+			self.eval_status_df.loc[("Nan", _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+
+			self.store_status_files()
+
 		return model
 
 
 
-	def evaluate_scenarioc(self, ticker, model, data):
+	def evaluate_scenarioc(self, model, data):
 		_r = [None] * 2
 		X_train = None
 		y_train = None
@@ -760,7 +775,7 @@ class FinCapstone():
 		X_test = data[2]
 		y_test = data[3]
 
-		print("Evaluating {}".format(ticker))
+		print("Evaluating {}".format(self.model_name))
 		
 		_r[0] = scenarioc.evaluate(model, X_train, y_train, return_type="dict")
 

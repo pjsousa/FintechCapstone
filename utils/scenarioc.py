@@ -224,7 +224,7 @@ def prepare_problemspace(ticker_list, date_from, date_until, model_name, normali
 	return X, y, enconding_ctx
 
 
-def create_model(side, channels):
+def create_model(side, channels, output_shape=4):
 	model = Sequential()
 
 	model.add(Conv2D(64, (3, 3), input_shape=(side, side, channels), activation="relu"))
@@ -237,10 +237,10 @@ def create_model(side, channels):
 
 	model.add(Flatten())
 
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=True)
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=False)
+	kutils.FCBlock(model, add_batchnorm=True, add_dropout=False)
 
-	model.add(Dense(4, kernel_initializer='normal'))
+	model.add(Dense(output_shape, kernel_initializer='normal'))
 
 	# Compile model
 	model.compile(loss='mean_squared_error', optimizer='rmsprop')
