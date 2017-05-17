@@ -703,14 +703,13 @@ class FinCapstone():
 		model = None
 
 		print("Loading Train")
-		X_train, y_train, ctx_train = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.model_name, useSample)
+		X_train, y_train, ctx_train = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.model_name)
 		print("Loading Test")
-		X_test, y_test, ctx_test = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.test_from, self.date_to, self.model_name, useSample)
+		X_test, y_test, ctx_test = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.test_from, self.date_to, self.model_name)
 
 		## Normalize Features
 		X_train = (X_train - X_train.mean()) / X_train.std()
 		X_test = (X_test - X_train.mean()) / X_train.std()
-
 
 		## Normalize Labels
 		y_train = np.log(np.abs(y_train)) * np.sign(y_train)

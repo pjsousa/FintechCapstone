@@ -152,14 +152,31 @@ def transform_features(ticker, itr_date, n_states, timespan, modelname):
 
 def calc_features(raw_df, verbose=True):
 	result_df = pd.DataFrame()
+	_full = scenarioa.calc_features(raw_df, verbose)
 
-	result_df["Close"] = raw_df["Close"]
+	result_df["Close"] = _full["Close"]
 
-	result_df["RSI_60"] = vectorized_funs.rsiFunc(raw_df["Close"], 60)
+	result_df["BOLL_60_UP"] = _full["BOLL_60_UP"]
+	result_df["BOLL_60_DOWN"] = _full["BOLL_60_DOWN"]
 
-	daily_return = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
+	result_df["MACD"] = _full["MACD"]
+	result_df["MACD_EMASLOW"] = _full["MACD_EMASLOW"]
+	result_df["MACD_EMAFAST"] = _full["MACD_EMAFAST"]
 
-	result_df["OBV"] = vectorized_funs.onbalancevolumeFunc(daily_return, raw_df["Volume"])
+	result_df["RSI_60"] = _full["RSI_60"]
+
+	result_df["ADX"] = _full["ADX"]
+	result_df["ADX_PDI"] = _full["ADX_PDI"]
+	result_df["ADX_NDI"] = _full["ADX_NDI"]
+
+	result_df["AROONUP_20"] = _full["AROONUP_20"]
+	result_df["AROONDOWN_20"] = _full["AROONDOWN_20"]
+
+	result_df["CHAIKIN_MFLOW_21"] = _full["CHAIKIN_MFLOW_21"]
+	result_df["DAILY_MFLOW_21"] = _full["DAILY_MFLOW_21"]
+
+	result_df["OBV"] = _full["OBV"]
+
 
 	return result_df
 
