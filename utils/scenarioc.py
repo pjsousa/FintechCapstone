@@ -22,6 +22,43 @@ import itertools
 
 import math
 
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.layers import Flatten
+from keras.layers import Lambda
+from keras.layers import Input
+from keras.layers.convolutional import Conv2D
+from keras.layers.convolutional import MaxPooling2D
+from keras.layers.convolutional import UpSampling2D
+from keras.layers.convolutional import ZeroPadding2D
+from keras.layers.normalization import BatchNormalization
+from keras.wrappers.scikit_learn import KerasClassifier
+
+from keras.callbacks import EarlyStopping
+from keras.callbacks import ModelCheckpoint
+from keras import backend as K
+from keras.metrics import binary_accuracy
+from keras.wrappers.scikit_learn import KerasRegressor
+
+_dd = None
+
+def accuracy_gainloss(y_true, y_pred):
+    _dd = [K.eval(y_true), K.eval(y_pred)]
+    gain_test = K.cast(K.greater(y_true, K.constant(0.5)), K.floatx())
+    gain_pred = K.cast(K.greater(y_pred, K.constant(0.5)), K.floatx())
+
+    return binary_accuracy(gain_test, gain_pred)
+
+
+def r2_regression(y_true, y_pred):
+	numerator = K.square(y_true - y_pred)
+	denominator = K.sum(K.square(y_true - K.mean(y_true)))
+
+	return K.constant(1.0) - (numerator / denominator)
+
+
+
 #
 #	in : 
 #		multiple technical indicators:
@@ -156,26 +193,26 @@ def calc_features(raw_df, verbose=True):
 
 	result_df["Close"] = _full["Close"]
 
-	result_df["BOLL_60_UP"] = _full["BOLL_60_UP"]
-	result_df["BOLL_60_DOWN"] = _full["BOLL_60_DOWN"]
+	# result_df["BOLL_60_UP"] = _full["BOLL_60_UP"]
+	# result_df["BOLL_60_DOWN"] = _full["BOLL_60_DOWN"]
 
-	result_df["MACD"] = _full["MACD"]
-	result_df["MACD_EMASLOW"] = _full["MACD_EMASLOW"]
-	result_df["MACD_EMAFAST"] = _full["MACD_EMAFAST"]
+	# result_df["MACD"] = _full["MACD"]
+	# result_df["MACD_EMASLOW"] = _full["MACD_EMASLOW"]
+	# result_df["MACD_EMAFAST"] = _full["MACD_EMAFAST"]
 
 	result_df["RSI_60"] = _full["RSI_60"]
 
-	result_df["ADX"] = _full["ADX"]
-	result_df["ADX_PDI"] = _full["ADX_PDI"]
-	result_df["ADX_NDI"] = _full["ADX_NDI"]
+	# result_df["ADX"] = _full["ADX"]
+	# result_df["ADX_PDI"] = _full["ADX_PDI"]
+	# result_df["ADX_NDI"] = _full["ADX_NDI"]
 
-	result_df["AROONUP_20"] = _full["AROONUP_20"]
-	result_df["AROONDOWN_20"] = _full["AROONDOWN_20"]
+	# result_df["AROONUP_20"] = _full["AROONUP_20"]
+	# result_df["AROONDOWN_20"] = _full["AROONDOWN_20"]
 
 	result_df["CHAIKIN_MFLOW_21"] = _full["CHAIKIN_MFLOW_21"]
-	result_df["DAILY_MFLOW_21"] = _full["DAILY_MFLOW_21"]
+	# result_df["DAILY_MFLOW_21"] = _full["DAILY_MFLOW_21"]
 
-	result_df["OBV"] = _full["OBV"]
+	#result_df["OBV"] = _full["OBV"]
 
 
 	return result_df
@@ -223,12 +260,15 @@ def prepare_problemspace(ticker_list, date_from, date_until, model_name, normali
 		encoding_exists = False
 
 		if ticker_hasdate:
-			current_encoding = load_scenarioc_encodings(itr["ticker"], model_name, datetime.datetime.strftime(itr["date"], "%Y-%m-%d"))
-			encoding_exists = False if (len(current_encoding.shape) == 0) else True
+			try:
+				current_encoding = load_scenarioc_encodings(itr["ticker"], model_name, datetime.datetime.strftime(itr["date"], "%Y-%m-%d"))
+				encoding_exists = False if (current_encoding is None) or (len(current_encoding.shape) == 0) else True
+			except:
+				print("Error", _it)
 
 			if encoding_exists:
 				enconding_ctx.append(_it)
-				X.append(current_encoding)
+				X.append(current_encoding[:,:,:3])
 				y.append(labels_df.iloc[date_idx])
 
 	X = np.array(X)
@@ -263,19 +303,63 @@ def create_model(side, channels, output_shape=4):
 	model.compile(loss='mean_squared_error', optimizer='rmsprop')
 	return model
 
+def create_model():
+    model = Sequential()
+
+    # Block 1
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1', input_shape=(224,224,3)))
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool'))
+
+    # Block 2
+    model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1'))
+    model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool'))
+
+    # Block 3
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1'))
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2'))
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool'))
+
+    # Block 4
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool'))
+
+    # Block 5
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool'))
+    
+    
+    # FC
+    model.add(Flatten())
+    model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+    model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+    model.add(Dense(4, kernel_initializer='normal'))
+
+
+    model.compile(loss='mean_squared_error', optimizer='adam')
+
+    return model
 
 
 
-def fit(model, X_reduced, y_train, nb_epoch=1):
+
+def fit(model, X_train, y_train, X_test, y_test, nb_epoch=1):
+	filepath=paths.TEMP_PATH + "/" + "weights-improvement-{epoch:04d}-{val_loss:.2f}.hdf5"
+	checkpoint = ModelCheckpoint(filepath, monitor="val_loss" , verbose=1, save_best_only=True,mode="auto" )
+	early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=15, verbose=1, mode='auto')
+
+	valdata = (X_test, y_test)
+
+	model.fit(X_train, y_train, epochs=nb_epoch, callbacks=[early_stop, checkpoint], validation_data=valdata, batch_size=32)
 
 
-		## Create a new dimension for the "channel"
-		X = X_reduced
-
-		## Fit
-		model.fit(X, y_train, epochs=nb_epoch, batch_size=128, verbose=1)
-
-		return model
+	return model
 
 
 def evaluate(model, X_test, y_test, return_type="dict"):

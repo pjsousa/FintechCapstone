@@ -36,3 +36,20 @@ def FCBlock(model, block_size=4096,add_batchnorm=False, add_dropout=False):
 		model.add(Dropout(0.3))
 
 
+def create_vgg16_model():
+	model = VGG16(weights=None, include_top=False)
+
+	top_model = Sequential()
+	top_model.add(Flatten())
+	top_model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+	top_model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+	top_model.add(Dense(4, kernel_initializer='normal'))
+
+
+	model.add(top_model)
+
+	model.compile(loss='mean_squared_error', optimizer='adam')
+
+	return model
+
+

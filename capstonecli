@@ -26,10 +26,11 @@ def exec_fetch(do_fetch=True, do_engineering=True):
 	}
 
 	trial = FinCapstone(
-#		ticker_list=["GLW","HIMX","YHOO"]
+		#ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
-		,encode_workpages=10
+		,encode_workpages=7
 		, model_name="FullScenarioC"
+		#, model_name="ExampleFintech"
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
@@ -51,8 +52,9 @@ def exec_fengineer(do_fetch=True, do_engineering=True):
 	trial = FinCapstone(
 		#ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
-		,encode_workpages=10
+		,encode_workpages=7
 		, model_name="FullScenarioC"
+		#, model_name="ExampleFintech"
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
@@ -74,15 +76,16 @@ def exec_training(do_fetch=True, do_engineering=True):
 	trial = FinCapstone(
 		#ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
-		,encode_workpages=10
+		,encode_workpages=7
 		, model_name="FullScenarioC"
+		#, model_name="ExampleFintech"
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
 	#trial.train(train_next=1, nb_epoch=5)
-	trial.train(train_next=1, nb_epoch=1000)
+	trial.train(train_next=1, nb_epoch=2000)
 
 def exec_fencode(work_page):
 	from FintechCapstone import FinCapstone
@@ -98,15 +101,16 @@ def exec_fencode(work_page):
 	trial = FinCapstone(
 		#ticker_list=["GLW","HIMX","YHOO"]
 		scenario="scenarioc"
-		,encode_workpages=10
+		,encode_workpages=7
 		, model_name="FullScenarioC"
+		#, model_name="ExampleFintech"
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
 	#trial.train(train_next=1, nb_epoch=5)
-	trial.feature_encoding(work_page=work_page)
+	trial.feature_encoding(work_page=work_page, useSample=0.3)
 
 
 """

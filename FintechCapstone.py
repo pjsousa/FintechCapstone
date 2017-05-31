@@ -220,8 +220,9 @@ class FinCapstone():
 
 
 
-	def feature_encoding(self, scenario=None, work_page=None):
+	def feature_encoding(self, scenario=None, work_page=None, useSample=None):
 		scenario = self.scenario if scenario is None else scenario
+		_skip = False
 		
 		number_pages = self.encode_workpages
 
@@ -230,7 +231,7 @@ class FinCapstone():
 		tickers = self.valid_ticker_list()
 		dates = [ datetime.datetime.strftime(x, "%Y-%m-%d") for x in pd.date_range(start=self.date_from, end=self.date_to)]
 
-		_todo = [tickers, dates, [100], [60], [self.model_name]]
+		_todo = [tickers, dates, [100], [224], [self.model_name]]
 		_todo = [x for x in itertools.product(*_todo)]
 
 		# if work_page is defined, slice by the given page
@@ -244,7 +245,12 @@ class FinCapstone():
 
 		for itr in _todo:
 			_start = datetime.datetime.now()
+
 			try:
+				if (useSample is not None) and (np.random.rand() > useSample):
+					print("Skip. {} {}".format(itr[0], itr[1]))
+					continue
+
 				mtf = scenarioc.transform_features(*itr)
 
 				self.store_scenarioc_encodings(mtf, itr[0], self.model_name, itr[1])
@@ -254,8 +260,6 @@ class FinCapstone():
 				_status_df.loc[(itr[0], itr[1]), "start"] = _start
 				_status_df.loc[(itr[0], itr[1]), "end"] = datetime.datetime.now()
 				_status_df.loc[(itr[0], itr[1]), "status"] = "OK"
-
-				
 
 			except KeyError:
 				print("KeyError {}.".format(itr))
@@ -731,32 +735,33 @@ class FinCapstone():
 			# 	X_test = X_test[used_sample]
 			# 	y_test = y_test[used_sample]
 
-		y_train = y_train[ : , train_forlabel]
-		y_test = y_test[ : , train_forlabel]
+		y_train = y_train[ : , :]
+		y_test = y_test[ : , :]
 
-		model = scenarioc.create_model(60, 3, 1)
+		model = scenarioc.create_model()
 
 		print("Training Model")
-		for step_idx in np.arange(nb_epoch / 1):
-			_start = datetime.datetime.now()
-			_epoch_index = int(((step_idx*1)+1))
+		
+		_start = datetime.datetime.now()
+		#_epoch_index = int(((step_idx*1)+1))
+		_epoch_index = 0
 
-			scenarioc.fit(model, X_train, y_train, nb_epoch=1)
-			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
-			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+		scenarioc.fit(model, X_train, y_train, X_test, y_test, nb_epoch)
+		model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
+		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
 
-			results = self.evaluate_scenarioc(model, (X_train, y_train, X_test, y_test))
-			print(results)
+		results = self.evaluate_scenarioc(model, (X_train, y_train, X_test, y_test))
+		print(results)
 
-			self.eval_status_df.loc[("Nan", _epoch_index), "status"] = "COMPLETE"
-			self.eval_status_df.loc[("Nan", _epoch_index), "start"] = _start
-			self.eval_status_df.loc[("Nan", _epoch_index), "end"] = datetime.datetime.now()
-			self.eval_status_df.loc[("Nan", _epoch_index), "r_squared"] = results[0]["r_squared"]
-			self.eval_status_df.loc[("Nan", _epoch_index), "accuracy"] = results[0]["accuracy"]
-			self.eval_status_df.loc[("Nan", _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-			self.eval_status_df.loc[("Nan", _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+		self.eval_status_df.loc[("Nan", _epoch_index), "status"] = "COMPLETE"
+		self.eval_status_df.loc[("Nan", _epoch_index), "start"] = _start
+		self.eval_status_df.loc[("Nan", _epoch_index), "end"] = datetime.datetime.now()
+		self.eval_status_df.loc[("Nan", _epoch_index), "r_squared"] = results[0]["r_squared"]
+		self.eval_status_df.loc[("Nan", _epoch_index), "accuracy"] = results[0]["accuracy"]
+		self.eval_status_df.loc[("Nan", _epoch_index), "r_squared_test"] = results[1]["r_squared"]
+		self.eval_status_df.loc[("Nan", _epoch_index), "accuracy_test"] = results[1]["accuracy"]
 
-			self.store_status_files()
+		self.store_status_files()
 
 		return model
 

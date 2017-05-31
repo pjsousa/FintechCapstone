@@ -27,7 +27,7 @@ _URLS["amex"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0
 
 
 
-def fetch_quotes(ticker, from_date=datetime.datetime(1900, 1, 1), to_date=datetime.datetime.now(), source="yahoo"):
+def fetch_quotes(ticker, from_date=datetime.datetime(2005, 1, 1), to_date=datetime.datetime.now(), source="google"):
 	"""
 		Description:
 			<Description>
