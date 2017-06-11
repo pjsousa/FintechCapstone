@@ -1,3 +1,8 @@
+import itertools
+import math
+import re
+import glob
+
 import numpy as np
 import pandas as pd
 import datetime
@@ -10,17 +15,9 @@ from utils import vectorized_funs
 from utils import kerasutil as kutils
 from utils import scenarioa
 
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.layers.convolutional import Conv2D
+from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from sklearn.metrics import accuracy_score
-
-import itertools
-
-
-import math
 
 from keras.models import Sequential
 from keras.layers import Dense
@@ -88,21 +85,6 @@ def r2_regression(y_true, y_pred):
 #       https://www.aaai.org/ocs/index.php/WS/AAAIW15/paper/viewFile/10179/10251
 #
 #
-
-def gramian_anguler_field(serie, min_val, max_val):
-
-	n = serie.shape[0]
-	min_val = serie.min() if min_val is None else min_val
-	max_val = serie.max() if max_val is None else max_val
-
-	serie_normalized = ((serie - max_val) + (serie - min_val())) / (max_val - min_val())
-
-	polar_teta = np.arccos(serie_normalized)
-	polar_r = np.arange(serie_normalized.shape[0]) / n
-
-	G = np.cos(np.add(np.tile((serie).values.reshape(n,1), n), (serie).values.reshape(n, 1)))
-
-	return G
 
 
 def markov_transition_matrix(serie, n_states, min_val, max_val):
@@ -223,8 +205,23 @@ def calc_labels(raw_df, verbose=True):
 	return scenarioa.calc_labels(raw_df, verbose)
 
 
+def prepare_problemspace(ticker_list, model_name):
+	## Load the labels for every ticker
+	_labels = dict()
 
-def prepare_problemspace(ticker_list, date_from, date_until, model_name, normalize=True, return_type="pandas"):
+	for itr_ticker in ticker_list:
+		_labels[itr_ticker] = load_scenarioc_labels(itr_ticker, True)
+		_labels[itr_ticker].set_index("Date", inplace=True)
+
+	## Look into disk and list all TICKERS and DATES encodings
+	listing = glob.glob('./data/D_TRIALA/*.npy')
+	rx = "MTFIELD_(.*)_%s_(\d{4}-\d{2}-\d{2}).npy" % model_name
+	_tickers = np.array([ re.search(rx, x).group(1) for x in listing ])
+	_dates = np.array([ pd.to_datetime(re.search(rx, x).group(2)) for x in listing ])
+
+	return _tickers, _dates, _labels
+
+def prepare_problemspace_deprecated(ticker_list, date_from, date_until, model_name, normalize=True, return_type="pandas"):
 	X = []
 	y = []
 
@@ -304,80 +301,151 @@ def create_model(side, channels, output_shape=4):
 	return model
 
 def create_model():
-    model = Sequential()
+	model = Sequential()
 
-    # Block 1
-    model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1', input_shape=(224,224,3)))
-    model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool'))
+	# Block 1
+	model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1', input_shape=(224,224,3)))
+	model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2'))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool'))
 
-    # Block 2
-    model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1'))
-    model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool'))
+	# Block 2
+	model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1'))
+	model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2'))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool'))
 
-    # Block 3
-    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1'))
-    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2'))
-    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool'))
+	# Block 3
+	model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1'))
+	model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2'))
+	model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3'))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool'))
 
-    # Block 4
-    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1'))
-    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2'))
-    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool'))
+	# Block 4
+	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1'))
+	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2'))
+	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3'))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool'))
 
-    # Block 5
-    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1'))
-    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2'))
-    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool'))
-    
-    
-    # FC
-    model.add(Flatten())
-    model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
-    model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
-    model.add(Dense(4, kernel_initializer='normal'))
+	# Block 5
+	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1'))
+	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2'))
+	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3'))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool'))
 
 
-    model.compile(loss='mean_squared_error', optimizer='adam')
+	# FC
+	model.add(Flatten())
+	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+	model.add(Dense(4, kernel_initializer='normal'))
 
-    return model
 
-
-
-
-def fit(model, X_train, y_train, X_test, y_test, nb_epoch=1):
-	filepath=paths.TEMP_PATH + "/" + "weights-improvement-{epoch:04d}-{val_loss:.2f}.hdf5"
-	checkpoint = ModelCheckpoint(filepath, monitor="val_loss" , verbose=1, save_best_only=True,mode="auto" )
-	early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=15, verbose=1, mode='auto')
-
-	valdata = (X_test, y_test)
-
-	model.fit(X_train, y_train, epochs=nb_epoch, callbacks=[early_stop, checkpoint], validation_data=valdata, batch_size=32)
-
+	model.compile(loss='mean_squared_error', optimizer='adam')
 
 	return model
 
 
-def evaluate(model, X_test, y_test, return_type="dict"):
+def seq_data(dates, tickers, labels, model_name):
+	X = None
+	y = None
+	
+	for i in range(dates.shape[0]):
+		_iter = (dates[i], tickers[i])
+
+		X = load_scenarioc_encodings(_iter[1], model_name, datetime.date.strftime(_iter[0], "%Y-%m-%d"))
+		y = labels[_iter[1]].loc[_iter[0]].values
+		
+		## when X.shape is an empty tuple, we don't yield and go to the next iteration
+		if X.shape:
+			yield X, y
+
+
+def seq_batch(dates, tickers, labels, model_name, batch_size=32):
+	seq = seq_data(dates, tickers, labels, model_name)
+	X = []
+	y = []
+	while True:
+		X = []
+		y = []
+		for i in range(batch_size):
+			try:
+				_r, _rr = next(seq)
+				X.append(_r)
+				y.append(_rr)
+			except StopIteration:
+				yield X, y
+				raise StopIteration
+		
+		yield X, y
+
+def features_stats(dates, tickers, labels, model_name):
+	_r = []
+	data_iterator = seq_batch(dates, tickers, labels, model_name)
+
+	try:
+		while True:
+			X_batch, y_batch = next(data_iterator)
+			X_batch = np.array(X_batch)
+			_r.append([X_batch.mean(), X_batch.var()])
+
+	except StopIteration:
+		_r = np.array(_r)
+
+	return _r[:,0].mean(), np.sqrt(np.mean(_r[:,1]))
+
+
+def train(model, dates, tickers, labels, model_name, features_mean, features_std):
+	data_iterator = seq_batch(dates, tickers, labels, model_name)
+	try:
+		while True:
+			X_batch, y_batch = next(data_iterator)
+			X_batch = np.array(X_batch)
+
+			y_batch = np.where(~np.isnan(y_batch), y_batch, 0.0)
+			y_batch = np.where(~np.isinf(y_batch), y_batch, 0.0)
+
+			## Normalize Features
+			X_batch = (X_batch - features_mean) / features_std
+
+			model.fit(X_batch, y_batch, epochs=1, batch_size=32, verbose=0)
+
+	except StopIteration:
+		print("Finished Training:")
+	
+	return model
+
+def evaluate(model, dates, tickers, labels, model_name, features_mean, features_std):
 	_r = dict()
+	y_true = []
+	y_pred = []
 
-	X = X_test
+	data_iterator = seq_batch(dates, tickers, labels, model_name)
 
-	y_pred = model.predict(X, verbose=1)
-	gain_test = (y_test > 0.0) * 1.0
+	try:
+		while True:
+			X_batch, y_batch = next(data_iterator)
+			X_batch = np.array(X_batch)
+
+			y_batch = np.where(~np.isnan(y_batch), y_batch, 0.0)
+			y_batch = np.where(~np.isinf(y_batch), y_batch, 0.0)
+
+			## Normalize Features
+			X_batch = (X_batch - features_mean) / features_std
+
+			y_pred.append(model.predict(X_batch, verbose=0))
+			y_true.append(y_batch)
+
+	except StopIteration:
+		print("Finished Eval")
+
+	y_true = np.concatenate(y_true)
+	y_pred = np.concatenate(y_pred)
+
+	gain_true = (y_true > 0.0) * 1.0
 	gain_pred = (y_pred > 0.0) * 1.0
 
-	_r["r_squared"] = r2_score(y_test, y_pred, multioutput = "uniform_average")
-	_r["accuracy"] = accuracy_score(gain_test, gain_pred)
-
-	if return_type == "pandas":
-		_r["r_squared"] = [_r["r_squared"]]
-		_r["accuracy"] = [_r["accuracy"]]
-		_r = pd.DataFrame.from_dict(_r)
+	_r["mse"] = mean_squared_error(y_true, y_pred)
+	_r["r_squared"] = r2_score(y_true, y_pred, multioutput = "uniform_average")
+	_r["accuracy"] = accuracy_score(gain_true, gain_pred)
 
 	return _r
 

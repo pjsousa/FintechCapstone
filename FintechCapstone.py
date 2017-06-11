@@ -21,8 +21,6 @@ from utils import paths_helper as paths
 import argparse
 import os
 
-from sklearn.model_selection import ShuffleSplit
-
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -698,70 +696,78 @@ class FinCapstone():
 
 
 
-	def train_scenarioc(self, nb_epoch=100, useSample=True, train_forlabel=0):
+	def train_scenarioc(self, nb_epoch=100):
 		X_train = None
 		y_train = None
 		X_test = None
 		y_test = None
 		results = None
 		model = None
+		batch_size = 32
+		X_batch = None
+		y_batch = None
+		best_loss = None
 
-		print("Loading Train")
-		X_train, y_train, ctx_train = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.model_name)
-		print("Loading Test")
-		X_test, y_test, ctx_test = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.test_from, self.date_to, self.model_name)
+		print("Training Scenario C")
 
-		## Normalize Features
-		X_train = (X_train - X_train.mean()) / X_train.std()
-		X_test = (X_test - X_train.mean()) / X_train.std()
+		## load all label data and feature contexts for batch loading
+		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.model_name)
 
-		## Normalize Labels
-		y_train = np.log(np.abs(y_train)) * np.sign(y_train)
-		y_test = np.log(np.abs(y_test)) * np.sign(y_test)
-		y_train = np.where(~np.isnan(y_train), y_train, 0.0)
-		y_train = np.where(~np.isinf(y_train), y_train, 0.0)
-		y_test = np.where(~np.isnan(y_test), y_test, 0.0)
-		y_test = np.where(~np.isinf(y_test), y_test, 0.0)
+		# _tickers = _tickers[:300]
+		# _dates = _dates[:300]
 
+		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
+		_mask_test = (_dates >= pd.to_datetime(self.test_from))
 
-		## Only use a subsample of our data
-		if useSample:
-			rs = ShuffleSplit(n_splits=1, train_size=.20)
-			for used_sample, unused_saple in rs.split(X_train):
-				X_train = X_train[used_sample]
-				y_train = y_train[used_sample]
-			
-			# for used_sample, unused_saple in rs.split(X_test):
-			# 	X_test = X_test[used_sample]
-			# 	y_test = y_test[used_sample]
-
-		y_train = y_train[ : , :]
-		y_test = y_test[ : , :]
+		_tickers_train = _tickers[_mask_train]
+		_dates_train = _dates[_mask_train]
+		_tickers_test = _tickers[_mask_test]
+		_dates_test = _dates[_mask_test]
 
 		model = scenarioc.create_model()
 
-		print("Training Model")
-		
-		_start = datetime.datetime.now()
-		#_epoch_index = int(((step_idx*1)+1))
-		_epoch_index = 0
+		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, self.model_name)
 
-		scenarioc.fit(model, X_train, y_train, X_test, y_test, nb_epoch)
-		model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
-		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+		for itr_epoch in range(nb_epoch):
+			_start = datetime.datetime.now()
+			print("Epoch", itr_epoch)
 
-		results = self.evaluate_scenarioc(model, (X_train, y_train, X_test, y_test))
-		print(results)
+			scenarioc.train(model, _dates_train, _tickers_train, _labels, self.model_name, feature_mean, feature_std)
 
-		self.eval_status_df.loc[("Nan", _epoch_index), "status"] = "COMPLETE"
-		self.eval_status_df.loc[("Nan", _epoch_index), "start"] = _start
-		self.eval_status_df.loc[("Nan", _epoch_index), "end"] = datetime.datetime.now()
-		self.eval_status_df.loc[("Nan", _epoch_index), "r_squared"] = results[0]["r_squared"]
-		self.eval_status_df.loc[("Nan", _epoch_index), "accuracy"] = results[0]["accuracy"]
-		self.eval_status_df.loc[("Nan", _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-		self.eval_status_df.loc[("Nan", _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+			train_eval = scenarioc.evaluate(model, _dates_train, _tickers_train, _labels, self.model_name, feature_mean, feature_std)
+			valid_eval = scenarioc.evaluate(model, _dates_test, _tickers_test, _labels, self.model_name, feature_mean, feature_std)
 
-		self.store_status_files()
+			print("Train Eval: ", train_eval)
+			print("Test Eval: ", valid_eval)
+
+			self.eval_status_df.loc[("Nan", itr_epoch), "status"] = "COMPLETE"
+			self.eval_status_df.loc[("Nan", itr_epoch), "start"] = _start
+			self.eval_status_df.loc[("Nan", itr_epoch), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[("Nan", itr_epoch), "mse"] = train_eval["mse"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared"] = train_eval["r_squared"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy"] = train_eval["accuracy"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "mse_test"] = valid_eval["mse"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared_test"] = valid_eval["r_squared"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy_test"] = valid_eval["accuracy"]
+
+			self.store_status_files()
+
+
+			if best_loss is None:
+				best_loss = [itr_epoch, valid_eval["mse"]]
+				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", itr_epoch))
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+			else:
+				if valid_eval["mse"] < best_loss[1]:
+					print("New Best epoch.")
+					best_loss = [itr_epoch, valid_eval["mse"]]
+
+					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", itr_epoch))
+					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+
+				if (itr_epoch - best_loss[0]) > 5:
+					print("Not improving for 5 epochs. Stopping.")
+					break;
 
 		return model
 
@@ -845,6 +851,8 @@ class FinCapstone():
 		eval_status_df["status"] = "PADLINE"
 		eval_status_df["start"] = None
 		eval_status_df["end"] = None
+		eval_status_df["mse"] = None
+		eval_status_df["mse_test"] = None
 		eval_status_df["r_squared"] = None
 		eval_status_df["accuracy"] = None
 		eval_status_df["r_squared_test"] = None
