@@ -25,7 +25,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-TINY_FLOAT = 1e-128
+TINY_FLOAT = 1e-10
 
 class FinCapstone():
 

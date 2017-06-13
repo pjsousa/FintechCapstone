@@ -38,23 +38,7 @@ from keras import backend as K
 from keras.metrics import binary_accuracy
 from keras.wrappers.scikit_learn import KerasRegressor
 
-_dd = None
-
-def accuracy_gainloss(y_true, y_pred):
-    _dd = [K.eval(y_true), K.eval(y_pred)]
-    gain_test = K.cast(K.greater(y_true, K.constant(0.5)), K.floatx())
-    gain_pred = K.cast(K.greater(y_pred, K.constant(0.5)), K.floatx())
-
-    return binary_accuracy(gain_test, gain_pred)
-
-
-def r2_regression(y_true, y_pred):
-	numerator = K.square(y_true - y_pred)
-	denominator = K.sum(K.square(y_true - K.mean(y_true)))
-
-	return K.constant(1.0) - (numerator / denominator)
-
-
+TINY_FLOAT = 1e-10
 
 #
 #	in : 
@@ -84,7 +68,20 @@ def r2_regression(y_true, y_pred):
 #
 #       https://www.aaai.org/ocs/index.php/WS/AAAIW15/paper/viewFile/10179/10251
 #
-#
+
+def accuracy_gainloss(y_true, y_pred):
+    gain_test = K.cast(K.greater(y_true, K.constant(0.5)), K.floatx())
+    gain_pred = K.cast(K.greater(y_pred, K.constant(0.5)), K.floatx())
+
+    return binary_accuracy(gain_test, gain_pred)
+
+
+def r2_regression(y_true, y_pred):
+	numerator = K.square(y_true - y_pred)
+	denominator = K.sum(K.square(y_true - K.mean(y_true)))
+
+	return K.constant(1.0) - (numerator / denominator)
+
 
 
 def markov_transition_matrix(serie, n_states, min_val, max_val):
@@ -171,38 +168,37 @@ def transform_features(ticker, itr_date, n_states, timespan, modelname):
 
 def calc_features(raw_df, verbose=True):
 	result_df = pd.DataFrame()
-	_full = scenarioa.calc_features(raw_df, verbose)
 
-	result_df["Close"] = _full["Close"]
+	result_df["Close"] = raw_df["Close"]
+	result_df["RSI_60"] = vectorized_funs.rsiFunc(raw_df["Close"], 60)
+	cmf, dmf = vectorized_funs.calc_chaikin_money_flow(raw_df, window=21)
+	result_df["CHAIKIN_MFLOW_21"] = cmf
 
-	# result_df["BOLL_60_UP"] = _full["BOLL_60_UP"]
-	# result_df["BOLL_60_DOWN"] = _full["BOLL_60_DOWN"]
-
-	# result_df["MACD"] = _full["MACD"]
-	# result_df["MACD_EMASLOW"] = _full["MACD_EMASLOW"]
-	# result_df["MACD_EMAFAST"] = _full["MACD_EMAFAST"]
-
-	result_df["RSI_60"] = _full["RSI_60"]
-
-	# result_df["ADX"] = _full["ADX"]
-	# result_df["ADX_PDI"] = _full["ADX_PDI"]
-	# result_df["ADX_NDI"] = _full["ADX_NDI"]
-
-	# result_df["AROONUP_20"] = _full["AROONUP_20"]
-	# result_df["AROONDOWN_20"] = _full["AROONDOWN_20"]
-
-	result_df["CHAIKIN_MFLOW_21"] = _full["CHAIKIN_MFLOW_21"]
-	# result_df["DAILY_MFLOW_21"] = _full["DAILY_MFLOW_21"]
-
-	#result_df["OBV"] = _full["OBV"]
-
+	## CHANGE THIS TO MEAN?
+	result_df.where(~np.isnan(result_df), TINY_FLOAT, inplace=True)
+	result_df.where(-np.isinf(result_df), TINY_FLOAT, inplace=True)
 
 	return result_df
 
 
 
 def calc_labels(raw_df, verbose=True):
-	return scenarioa.calc_labels(raw_df, verbose)
+	result_df = pd.DataFrame()
+
+	result_df["RETURN_1"] = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
+	result_df["RETURN_30"] = ((raw_df["Close"] / raw_df["Close"].shift(30)) - 1)
+	result_df["RETURN_60"] = ((raw_df["Close"] / raw_df["Close"].shift(60)) - 1)
+	result_df["RETURN_200"] = ((raw_df["Close"] / raw_df["Close"].shift(200)) - 1)
+
+	result_df["RETURN_1"] = result_df["RETURN_1"].shift(-1)
+	result_df["RETURN_30"] = result_df["RETURN_30"].shift(-30)
+	result_df["RETURN_60"] = result_df["RETURN_60"].shift(-60)
+	result_df["RETURN_200"] = result_df["RETURN_200"].shift(-200)
+
+	result_df.where(~np.isnan(result_df), TINY_FLOAT, inplace=True)
+	result_df.where(-np.isinf(result_df), TINY_FLOAT, inplace=True)
+
+	return result_df
 
 
 def prepare_problemspace(ticker_list, model_name):
@@ -214,68 +210,12 @@ def prepare_problemspace(ticker_list, model_name):
 		_labels[itr_ticker].set_index("Date", inplace=True)
 
 	## Look into disk and list all TICKERS and DATES encodings
-	listing = glob.glob('./data/D_TRIALA/*.npy')
+	listing = glob.glob('./data/D_TRIALA/*%s*.npy' % model_name)
 	rx = "MTFIELD_(.*)_%s_(\d{4}-\d{2}-\d{2}).npy" % model_name
 	_tickers = np.array([ re.search(rx, x).group(1) for x in listing ])
 	_dates = np.array([ pd.to_datetime(re.search(rx, x).group(2)) for x in listing ])
 
 	return _tickers, _dates, _labels
-
-def prepare_problemspace_deprecated(ticker_list, date_from, date_until, model_name, normalize=True, return_type="pandas"):
-	X = []
-	y = []
-
-	labels_df = None
-	labels_ticker = None
-	date_idx = -1
-	current_encoding = None
-	ticker_hasdate = None
-	encoding_exists = None
-	enconding_ctx = []
-
-	tickers = ticker_list
-
-	dates = pd.date_range(date_from, date_until)
-
-	_todo = [tickers, dates]
-	#_todo = [x for x in itertools.product(*_todo)]
-
-	for _it in itertools.product(*_todo):
-		itr = dict(zip(["ticker", "date"], _it))
-
-		if labels_ticker != itr["ticker"]:
-			labels_ticker = itr["ticker"]
-			labels_df = load_scenarioc_labels(itr["ticker"], parseDate=True)
-			labels_df.set_index("Date", inplace=True)
-
-		try:
-			date_idx = labels_df.index.get_loc(itr["date"])
-			ticker_hasdate = True
-		except KeyError:
-			ticker_hasdate = False
-
-		encoding_exists = False
-
-		if ticker_hasdate:
-			try:
-				current_encoding = load_scenarioc_encodings(itr["ticker"], model_name, datetime.datetime.strftime(itr["date"], "%Y-%m-%d"))
-				encoding_exists = False if (current_encoding is None) or (len(current_encoding.shape) == 0) else True
-			except:
-				print("Error", _it)
-
-			if encoding_exists:
-				enconding_ctx.append(_it)
-				X.append(current_encoding[:,:,:3])
-				y.append(labels_df.iloc[date_idx])
-
-	X = np.array(X)
-	y = np.array(y)
-
-	y = np.where(~np.isnan(y),y, 0.0)
-	y = np.where(~np.isinf(y),y, 0.0)
-
-
-	return X, y, enconding_ctx
 
 
 def create_model(side, channels, output_shape=4):
