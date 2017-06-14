@@ -718,7 +718,7 @@ class FinCapstone():
 		if useSample:
 			print(_tickers.shape, _dates.shape)
 			_tickers = _tickers[:int(_tickers.shape[0] * useSample)]
-			_dates = _dates[:int(_tickers.shape[0] * useSample)]
+			_dates = _dates[:int(_dates.shape[0] * useSample)]
 			print(_tickers.shape, _dates.shape)
 
 		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
