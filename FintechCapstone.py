@@ -716,8 +716,10 @@ class FinCapstone():
 		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.model_name)
 
 		if useSample:
-			_tickers = _tickers[:int(len(_tickers) * useSample)]
-			_dates = _dates[:int(len(_tickers) * useSample)]
+			print(_tickers.shape, _dates.shape)
+			_tickers = _tickers[:int(_tickers.shape[0] * useSample)]
+			_dates = _dates[:int(_tickers.shape[0] * useSample)]
+			print(_tickers.shape, _dates.shape)
 
 		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
 		_mask_test = (_dates >= pd.to_datetime(self.test_from))
