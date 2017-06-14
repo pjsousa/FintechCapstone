@@ -76,7 +76,7 @@ def exec_fengineer(model_name, scenario, microtlist):
 
 	trial.feature_engineering()
 
-def exec_training(model_name, scenario, microtlist):
+def exec_training(model_name, scenario, microtlist, useSample=None):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -105,7 +105,7 @@ def exec_training(model_name, scenario, microtlist):
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.train(train_next=1, nb_epoch=2000)
+	trial.train(train_next=1, nb_epoch=2000, useSample=useSample)
 
 def exec_fencode(model_name, scenario, microtlist, work_page, useSample):
 	from FintechCapstone import FinCapstone
@@ -194,7 +194,12 @@ if __name__ == "__main__":
 		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample_encode)
 
 	if args["train"]:
-		exec_training(args["name"], args["scenario"])
+		if args["subsample_encode"] is None:
+			_subsample_encode = 0.5
+		else:
+			_subsample_encode = int(args["subsample_encode"]) / 100.0
+
+		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample_encode)
 
 
 

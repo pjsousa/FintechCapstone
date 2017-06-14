@@ -291,7 +291,7 @@ class FinCapstone():
 
 
 
-	def train(self, nb_epoch=1, train_next=None, ticker=None):
+	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None):
 		## train only one specific ticker
 		work_tickers = None
 		_start = None
@@ -327,7 +327,7 @@ class FinCapstone():
 					model = self.train_scenariob(itr_ticker, nb_epoch)
 				elif self.scenario == "scenarioc":
 					
-					model = self.train_scenarioc(nb_epoch)
+					model = self.train_scenarioc(nb_epoch, useSample)
 
 				else:
 					model = None
@@ -698,7 +698,7 @@ class FinCapstone():
 
 
 
-	def train_scenarioc(self, nb_epoch=100):
+	def train_scenarioc(self, nb_epoch=100, useSample=None):
 		X_train = None
 		y_train = None
 		X_test = None
@@ -715,8 +715,9 @@ class FinCapstone():
 		## load all label data and feature contexts for batch loading
 		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.model_name)
 
-		# _tickers = _tickers[:300]
-		# _dates = _dates[:300]
+		if useSample:
+			_tickers = _tickers[:int(len(_tickers) * useSample)]
+			_dates = _dates[:int(len(_tickers) * useSample)]
 
 		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
 		_mask_test = (_dates >= pd.to_datetime(self.test_from))
