@@ -14,7 +14,7 @@ def dump_config(config_path):
 
 	return dump_config(config_path)
 
-def exec_fetch(do_fetch=True, do_engineering=True):
+def exec_fetch(model_name, scenario, microtlist):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -25,12 +25,19 @@ def exec_fetch(do_fetch=True, do_engineering=True):
 		,"long_term": [90]
 	}
 
+	if scenario is None:
+		scenario = "scenarioc"
+
+	if microtlist:
+		_ticker_list = ["NVDA","NFLX","AAPL"]
+	else:
+		_ticker_list = None
+
 	trial = FinCapstone(
-		#ticker_list=["GLW","HIMX","YHOO"]
-		scenario="scenarioc"
-		,encode_workpages=7
-		, model_name="FullScenarioC"
-		#, model_name="ExampleFintech"
+		scenario=scenario
+		, ticker_list = _ticker_list
+		, encode_workpages=7
+		, model_name=model_name
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
@@ -38,7 +45,7 @@ def exec_fetch(do_fetch=True, do_engineering=True):
 
 	trial.run_initial_dataload()
 
-def exec_fengineer(do_fetch=True, do_engineering=True):
+def exec_fengineer(model_name, scenario, microtlist):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -49,12 +56,19 @@ def exec_fengineer(do_fetch=True, do_engineering=True):
 		,"long_term": [90]
 	}
 
+	if scenario is None:
+		scenario = "scenarioc"
+
+	if microtlist:
+		_ticker_list = ["NVDA","NFLX","AAPL"]
+	else:
+		_ticker_list = None
+
 	trial = FinCapstone(
-		#ticker_list=["GLW","HIMX","YHOO"]
-		scenario="scenarioc"
-		,encode_workpages=7
-		, model_name="FullScenarioC"
-		#, model_name="ExampleFintech"
+		scenario=scenario
+		, ticker_list = _ticker_list
+		, encode_workpages=7
+		, model_name=model_name
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
@@ -62,7 +76,7 @@ def exec_fengineer(do_fetch=True, do_engineering=True):
 
 	trial.feature_engineering()
 
-def exec_training(do_fetch=True, do_engineering=True):
+def exec_training(model_name, scenario, microtlist):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -73,21 +87,27 @@ def exec_training(do_fetch=True, do_engineering=True):
 		,"long_term": [90]
 	}
 
+	if scenario is None:
+		scenario = "scenarioc"
+
+	if microtlist:
+		_ticker_list = ["NVDA","NFLX","AAPL"]
+	else:
+		_ticker_list = None
+
 	trial = FinCapstone(
-		#ticker_list=["GLW","HIMX","YHOO"]
-		scenario="scenarioc"
-		,encode_workpages=7
-		, model_name="FullScenarioC"
-		#, model_name="ExampleFintech"
+		scenario=scenario
+		, ticker_list = _ticker_list
+		, encode_workpages=7
+		, model_name=model_name
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
-	#trial.train(train_next=1, nb_epoch=5)
 	trial.train(train_next=1, nb_epoch=2000)
 
-def exec_fencode(work_page):
+def exec_fencode(model_name, scenario, microtlist, work_page, useSample):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -98,19 +118,26 @@ def exec_fencode(work_page):
 		,"long_term": [90]
 	}
 
+	if scenario is None:
+		scenario = "scenarioc"
+
+	if microtlist:
+		_ticker_list = ["NVDA","NFLX","AAPL"]
+	else:
+		_ticker_list = None
+
 	trial = FinCapstone(
-		#ticker_list=["GLW","HIMX","YHOO"]
-		scenario="scenarioc"
-		,encode_workpages=7
-		, model_name="FullScenarioC"
-		#, model_name="ExampleFintech"
+		scenario=scenario
+		, ticker_list = _ticker_list
+		, encode_workpages=7
+		, model_name=model_name
 		, ticker_list_samplesize=4000
 		, timespan=timespan
 		, date_from=date_from
 		, reset_status=False)
 
 	#trial.train(train_next=1, nb_epoch=5)
-	trial.feature_encoding(work_page=work_page, useSample=0.5)
+	trial.feature_encoding(work_page=work_page, useSample=useSample)
 
 
 """
@@ -126,12 +153,15 @@ if __name__ == "__main__":
 	ap.add_argument("--setup", required=False, help="Create directory structure.", action="store_true")
 	ap.add_argument("--dump-config", required=False, help="Create dump configuration file.")
 	ap.add_argument("--config", required=False, help="Configuration file to use.")
+	ap.add_argument("--microtlist", required=False, help="Only use 3 tickers", action="store_true")
 	ap.add_argument("--fetch", required=False, help="Execute a fetch session.", action="store_true")
 	ap.add_argument("--fengineer", required=False, help="Execute a fengineer session.", action="store_true")
 	ap.add_argument("--train", required=False, help="Execute a training session.", action="store_true")
 	ap.add_argument("--evaluate", required=False, help="Execute an evaluation session.", action="store_true")
 	ap.add_argument("--fencode", required=False, help="Perform feature encoding on the specified block.")
-	
+	ap.add_argument("--name", required=True, help="The model name.")
+	ap.add_argument("--scenario", required=False, help="The scenario to use.")
+	ap.add_argument("--subsample_encode", required=False, help="The subsampling probability [0 - 100]")
 
 
 	args = None
@@ -150,16 +180,21 @@ if __name__ == "__main__":
 		dump_config(args["dump_config"])
 
 	if args["fetch"]:
-		exec_fetch()
+		exec_fetch(args["name"], args["scenario"], args["microtlist"])
 
 	if args["fengineer"]:
-		exec_fengineer()
+		exec_fengineer(args["name"], args["scenario"], args["microtlist"])
 
 	if not(args["fencode"] is None):
-		exec_fencode(int(args["fencode"]))
+		if args["subsample_encode"] is None:
+			_subsample_encode = 0.5
+		else:
+			_subsample_encode = int(args["subsample_encode"]) / 100.0
+
+		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample_encode)
 
 	if args["train"]:
-		exec_training()
+		exec_training(args["name"], args["scenario"])
 
 
 

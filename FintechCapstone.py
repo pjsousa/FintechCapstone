@@ -42,8 +42,9 @@ class FinCapstone():
 				timespan=None,
 				timespan_ab=None,
 				train_from="2010-01-01",
-				train_until="2015-12-31",
-				test_from="2016-01-01",
+				train_until="2014-12-31",
+				test_from="2015-01-01",
+				test_until="2016-12-31",
 				encode_workpages=7,
 				bins=None):
 
@@ -58,6 +59,7 @@ class FinCapstone():
 		self.train_from = dtparser.parse(train_from)
 		self.train_until = dtparser.parse(train_until)
 		self.test_from = dtparser.parse(test_from)
+		self.test_until = dtparser.parse(test_until)
 		self.model_name = model_name
 		self.scenario = scenario
 		self.encode_workpages = encode_workpages
