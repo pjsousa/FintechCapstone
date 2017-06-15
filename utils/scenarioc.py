@@ -296,8 +296,11 @@ def seq_data(dates, tickers, labels, model_name):
 		y = labels[_iter[1]].loc[_iter[0]].values
 		
 		## when X.shape is an empty tuple, we don't yield and go to the next iteration
-		if X.shape:
-			yield X, y
+		try:
+			if X.shape:
+				yield X, y
+		except AttributeError:
+			print("scenarioc.seq_data - X came NoneType", _iter, "\n")
 
 
 def seq_batch(dates, tickers, labels, model_name, batch_size=32):
