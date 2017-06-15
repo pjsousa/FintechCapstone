@@ -2,6 +2,7 @@ import itertools
 import math
 import re
 import glob
+import os
 
 import numpy as np
 import pandas as pd
@@ -407,6 +408,9 @@ def load_scenarioc_features(ticker, parseDate=True):
 		_r = None
 
 	return _r
+
+def check_encoding_exists(ticker, modelname, date):
+	return os.path.isfile("{}/MTFIELD_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, modelname, date))
 
 def store_scenarioc_encodings(feature_data, ticker, modelname, date):
 	np.save("{}/MTFIELD_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, modelname, date), feature_data)

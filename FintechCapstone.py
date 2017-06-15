@@ -251,6 +251,10 @@ class FinCapstone():
 					print("Skip. {} {}".format(itr[0], itr[1]))
 					continue
 
+				if scenarioc.check_encoding_exists(itr[0], self.model_name, itr[1]):
+					print("File Exists. {} {}".format(itr[0], itr[1]))
+					continue
+
 				mtf = scenarioc.transform_features(*itr)
 
 				self.store_scenarioc_encodings(mtf, itr[0], self.model_name, itr[1])
