@@ -1,82 +1,103 @@
 #!/bin/bash
 
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.0075309999999999995 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.7531 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.0075309999999999995_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.0075309999999999995_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.0075309999999999995_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.0075309999999999995_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.0075309999999999995_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.0075309999999999995_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.7531_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.7531_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.7531_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.7531_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.7531_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.7531_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.015061999999999999 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 1.5062 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.015061999999999999_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.015061999999999999_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.015061999999999999_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.015061999999999999_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.015061999999999999_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.015061999999999999_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_1.5062_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_1.5062_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_1.5062_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_1.5062_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_1.5062_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_1.5062_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.022593000000000002 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 2.2593 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.022593000000000002_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.022593000000000002_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.022593000000000002_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.022593000000000002_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.022593000000000002_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.022593000000000002_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_2.2593_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_2.2593_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_2.2593_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_2.2593_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_2.2593_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_2.2593_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.030123999999999998 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 3.0124 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.030123999999999998_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.030123999999999998_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.030123999999999998_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.030123999999999998_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.030123999999999998_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.030123999999999998_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_3.0124_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_3.0124_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_3.0124_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_3.0124_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_3.0124_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_3.0124_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.037655 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 3.7655 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.037655_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.037655_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.037655_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.037655_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.037655_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.037655_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_3.7655_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_3.7655_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_3.7655_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_3.7655_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_3.7655_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_3.7655_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.045186000000000004 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 4.5186 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.045186000000000004_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.045186000000000004_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.045186000000000004_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.045186000000000004_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.045186000000000004_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.045186000000000004_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_4.5186_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_4.5186_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_4.5186_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_4.5186_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_4.5186_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_4.5186_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.052717 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 5.2717 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.052717_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.052717_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.052717_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.052717_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.052717_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.052717_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_5.2717_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_5.2717_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_5.2717_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_5.2717_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_5.2717_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_5.2717_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.060247999999999996 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 6.0248 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.060247999999999996_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.060247999999999996_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.060247999999999996_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.060247999999999996_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.060247999999999996_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.060247999999999996_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_6.0248_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_6.0248_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_6.0248_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_6.0248_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_6.0248_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_6.0248_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.06777899999999999 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 6.7779 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.06777899999999999_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.06777899999999999_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.06777899999999999_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.06777899999999999_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.06777899999999999_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.06777899999999999_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_6.7779_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_6.7779_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_6.7779_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_6.7779_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_6.7779_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_6.7779_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.07531 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 7.531 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.07531_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.07531_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.07531_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.07531_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.07531_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.07531_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_7.531_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_7.531_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_7.531_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_7.531_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_7.531_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_7.531_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.082841 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 8.2841 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.082841_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.082841_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.082841_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.082841_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.082841_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.082841_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_8.2841_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_8.2841_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_8.2841_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_8.2841_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_8.2841_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_8.2841_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.09037200000000001 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 9.0372 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.09037200000000001_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.09037200000000001_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.09037200000000001_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.09037200000000001_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.09037200000000001_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.09037200000000001_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_9.0372_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_9.0372_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_9.0372_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_9.0372_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_9.0372_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_9.0372_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.097903 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 9.7903 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.097903_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.097903_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.097903_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.097903_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.097903_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.097903_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_9.7903_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_9.7903_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_9.7903_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_9.7903_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_9.7903_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_9.7903_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.105434 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 10.5434 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.105434_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.105434_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.105434_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.105434_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.105434_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.105434_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_10.5434_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_10.5434_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_10.5434_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_10.5434_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_10.5434_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_10.5434_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.112965 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 11.2965 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.112965_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.112965_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.112965_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.112965_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.112965_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.112965_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_11.2965_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_11.2965_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_11.2965_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_11.2965_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_11.2965_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_11.2965_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.12049599999999999 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 12.0496 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.12049599999999999_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.12049599999999999_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.12049599999999999_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.12049599999999999_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.12049599999999999_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.12049599999999999_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_12.0496_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_12.0496_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_12.0496_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_12.0496_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_12.0496_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_12.0496_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.128027 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 12.8027 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.128027_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.128027_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.128027_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.128027_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.128027_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.128027_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_12.8027_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_12.8027_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_12.8027_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_12.8027_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_12.8027_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_12.8027_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.13555799999999998 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 13.5558 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.13555799999999998_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.13555799999999998_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.13555799999999998_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.13555799999999998_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.13555799999999998_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.13555799999999998_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_13.5558_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_13.5558_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_13.5558_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_13.5558_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_13.5558_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_13.5558_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.143089 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 14.3089 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.143089_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.143089_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.143089_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.143089_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.143089_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.143089_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_14.3089_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_14.3089_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_14.3089_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_14.3089_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_14.3089_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_14.3089_encode_status_df.tmp"
 eval $cmd
-cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 0.15062 --train"
+
+cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample_encode 15.062 --train"
 eval $cmd
-cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_0.15062_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_0.15062_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_0.15062_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_0.15062_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_0.15062_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_0.15062_encode_status_df.tmp"
+cmd="cp FullScenarioC_trialconfig.tmp FullScenarioC_15.062_trialconfig.tmp && cp FullScenarioC_fetchstatus.tmp FullScenarioC_15.062_fetchstatus.tmp && cp FullScenarioC_featureengineer_status.tmp FullScenarioC_15.062_featureengineer_status.tmp && cp FullScenarioC_train_status.tmp FullScenarioC_15.062_train_status.tmp && cp FullScenarioC_eval_status.tmp FullScenarioC_15.062_eval_status.tmp && cp FullScenarioC_encode_status_df.tmp FullScenarioC_15.062_encode_status_df.tmp"
 eval $cmd
+
