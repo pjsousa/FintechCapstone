@@ -189,7 +189,7 @@ if __name__ == "__main__":
 		if args["subsample_encode"] is None:
 			_subsample_encode = 0.5
 		else:
-			_subsample_encode = int(args["subsample_encode"]) / 100.0
+			_subsample_encode = float(args["subsample_encode"]) / 100.0
 
 		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample_encode)
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
 		if args["subsample_encode"] is None:
 			_subsample_encode = 0.5
 		else:
-			_subsample_encode = int(args["subsample_encode"]) / 100.0
+			_subsample_encode = float(args["subsample_encode"]) / 100.0
 
 		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample_encode)
 
