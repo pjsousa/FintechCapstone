@@ -219,28 +219,6 @@ def prepare_problemspace(ticker_list, model_name):
 	return _tickers, _dates, _labels
 
 
-def create_model(side, channels, output_shape=4):
-	model = Sequential()
-
-	model.add(Conv2D(64, (3, 3), input_shape=(side, side, channels), activation="relu"))
-	kutils.ConvBlock(1, 64, model, add_maxpooling=True)
-	kutils.ConvBlock(2, 128, model, add_maxpooling=True)
-	kutils.ConvBlock(3, 256, model, add_maxpooling=False)
-
-	kutils.ConvBlock(3, 512, model, add_maxpooling=False)
-	kutils.ConvBlock(3, 512, model, add_maxpooling=True)
-
-	model.add(Flatten())
-
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=False)
-	kutils.FCBlock(model, add_batchnorm=True, add_dropout=False)
-
-	model.add(Dense(output_shape, kernel_initializer='normal'))
-
-	# Compile model
-	model.compile(loss='mean_squared_error', optimizer='rmsprop')
-	return model
-
 def create_model():
 	model = Sequential()
 
@@ -277,7 +255,7 @@ def create_model():
 	model.add(Flatten())
 	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
 	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
-	model.add(Dense(4, kernel_initializer='normal'))
+	model.add(Dense(3, kernel_initializer='normal'))
 
 
 	model.compile(loss='mean_squared_error', optimizer='adam')
@@ -347,6 +325,8 @@ def train(model, dates, tickers, labels, model_name, features_mean, features_std
 			y_batch = np.where(~np.isnan(y_batch), y_batch, 0.0)
 			y_batch = np.where(~np.isinf(y_batch), y_batch, 0.0)
 
+			y_batch = y_batch[ : , :3]
+
 			## Normalize Features
 			X_batch = (X_batch - features_mean) / features_std
 
@@ -371,6 +351,8 @@ def evaluate(model, dates, tickers, labels, model_name, features_mean, features_
 
 			y_batch = np.where(~np.isnan(y_batch), y_batch, 0.0)
 			y_batch = np.where(~np.isinf(y_batch), y_batch, 0.0)
+
+			y_batch = y_batch[ : , :3]
 
 			## Normalize Features
 			X_batch = (X_batch - features_mean) / features_std

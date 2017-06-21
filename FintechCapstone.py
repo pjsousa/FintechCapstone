@@ -506,202 +506,6 @@ class FinCapstone():
 
 		return _r
 
-
-	# def train_scenarioa(self, ticker, nb_epoch=100):
-	# 	X_train = None
-	# 	y_train = None
-	# 	X_test = None
-	# 	y_test = None
-	# 	n_tickers = None
-	# 	results = None
-
-	# 	print("Training ScenarioA for {}, {}".format(ticker, nb_epoch))
-
-	# 	n_tickers  = len(self.valid_ticker_list())
-
-	# 	print("TRAIN model for %s tickers" % n_tickers)
-
-	# 	model = scenarioa.create_model(n_tickers)
-	# 	X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
-		
-	# 	for step_idx in np.arange(nb_epoch / 10):
-	# 		_start = datetime.datetime.now()
-	# 		_epoch_index = int(((step_idx*10)+10))
-
-	# 		scenarioa.fit(model, X_train, y_train, nb_epoch=10)
-	# 		model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
-	# 		model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
-
-	# 		results = self.evaluate_scenarioa(ticker, model, (X_train, y_train, X_test, y_test))
-	# 		print(results)
-
-	# 		self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
-	# 		self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
-	# 		self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
-	# 		self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
-	# 		self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
-	# 		self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-	# 		self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
-
-	# 		self.store_status_files()
-
-	# 	return model
-
-
-
-	# def evaluate_scenarioa(self, ticker, model=None, data=None):
-	# 	_r = [None] * 2
-	# 	X_train = None
-	# 	y_train = None
-	# 	X_test = None
-	# 	y_test = None
-
-	# 	if model is None:
-	# 		n_tickers = len(self.valid_ticker_list())
-	# 		model = scenarioa.create_model(n_tickers)
-	# 		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
-
-	# 	if data is None:
-	# 		features = self.load_baseline_features(ticker, True).set_index("Date")
-	# 		labels = self.load_baseline_labels(ticker, True).set_index("Date")
-
-	# 		X_train, y_train, X_test, y_test = scenarioa.prepare_problemspace(ticker, self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, True, "numpy")
-	# 	else:
-	# 		X_train = data[0]
-	# 		y_train = data[1]
-	# 		X_test = data[2]
-	# 		y_test = data[3]
-
-	# 	print("Evaluating {}".format(ticker))
-	# 	_start = datetime.datetime.now()
-	# 	_r[0] = scenarioa.evaluate(model, X_train, y_train, return_type="dict")
-	# 	_r[1] = scenarioa.evaluate(model, X_test, y_test, return_type="dict")
-
-	# 	return _r
-
-
-
-	# def train_scenariob(self, ticker=None, nb_epoch=100):
-	# 	X_train = None
-	# 	y_train = None
-	# 	X_test = None
-	# 	y_test = None
-	# 	n_tickers = None
-	# 	results = None
-	# 	iserror_pca = False
-	# 	X_final = None
-	# 	pca = None
-	# 	model = None
-
-	# 	if ticker is None:
-	# 		X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=None, return_type="numpy")
-	# 		print("Performing PCA")
-	# 		X_final, pca = scenariob.dim_reduction(X_train, 900)
-
-	# 		model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
-	# 		joblib.dump( pca, "{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
-
-	# 		print("Training Market")
-	# 		for step_idx in np.arange(nb_epoch / 50):
-	# 			_start = datetime.datetime.now()
-	# 			_epoch_index = int(((step_idx*50)+50))
-
-	# 			scenariob.fit(model, X_final, y_train, nb_epoch=50)
-	# 			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", _epoch_index))
-	# 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
-
-	# 			results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
-	# 			print(results)
-
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
-
-	# 			self.store_status_files()
-	# 	else:
-	# 		X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, ticker=ticker, return_type="numpy")
-			
-	# 		try:
-	# 			pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
-
-	# 			X_final, pca = scenariob.dim_reduction(X_train, 900, pca)
-
-	# 			model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
-	# 			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
-	# 		except OSError as e:
-	# 			print("Market weights file does not exist. Run train_scenariob(ticker=None) to train the market model. \n\n\n")
-	# 			raise
-	# 		except ValueError as e:
-	# 			print("PCA on disk is not for this model. \n Run train_scenariob(ticker=None) to train the market model. \n\n\n")
-	# 			raise
-	# 		except FileNotFoundError as e:
-	# 			print("PCA on disk does not exist. \n Run train_scenariob(ticker=None) to train the market model. \n\n\n")
-	# 			raise
-
-	# 		model = scenariob.finetune_model(model)
-	# 		print("Training {}".format(ticker))
-	# 		for step_idx in np.arange(nb_epoch / 50):
-	# 			_start = datetime.datetime.now()
-	# 			_epoch_index = int(((step_idx*50)+50))
-
-	# 			scenariob.fit(model, X_final, y_train, nb_epoch=50)
-	# 			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
-	# 			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
-
-	# 			results = self.evaluate_scenariob(ticker, model, (X_train, y_train, X_test, y_test), pca)
-	# 			print(results)
-
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-	# 			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
-
-	# 			self.store_status_files()
-	# 	return model
-
-
-
-	# def evaluate_scenariob(self, ticker, model=None, data=None, pca=None):
-	# 	_r = [None] * 2
-	# 	X_train = None
-	# 	y_train = None
-	# 	X_test = None
-	# 	y_test = None
-
-	# 	if (data is None) :
-	# 		X_train, y_train, X_test, y_test = scenariob.prepare_problemspace(self.valid_ticker_list(), self.train_from, self.train_until, self.test_from, normalize=True, return_type="numpy")
-	# 	else:
-	# 		X_train = data[0]
-	# 		y_train = data[1]
-	# 		X_test = data[2]
-	# 		y_test = data[3]
-
-	# 	if pca is None:
-	# 		pca = joblib.load("{}/pca_{}_{}_{}.p".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
-
-	# 	if model is None:
-	# 		X_final, pca = scenariob.dim_reduction(X_train, 900, pca)
-	# 		model = scenariob.create_model(len(self.valid_ticker_list()), X_final.shape[1])
-	# 		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
-
-	# 	print("Evaluating {}".format(ticker))
-	# 	X_train_final, pca = scenariob.dim_reduction(X_train, 900, pca)
-	# 	_r[0] = scenariob.evaluate(model, X_train_final, y_train, return_type="dict")
-
-	# 	X_test_final, pca = scenariob.dim_reduction(X_test, 900, pca)
-	# 	_r[1] = scenariob.evaluate(model, X_test_final, y_test, return_type="dict")
-
-	# 	return _r
-
-
-
 	def train_scenarioc(self, nb_epoch=100, useSample=None):
 		X_train = None
 		y_train = None
@@ -724,6 +528,8 @@ class FinCapstone():
 			_tickers = _tickers[:int(_tickers.shape[0] * useSample)]
 			_dates = _dates[:int(_dates.shape[0] * useSample)]
 			print(_tickers.shape, _dates.shape)
+		else:
+			useSample = 1.0
 
 		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
 		_mask_test = (_dates >= pd.to_datetime(self.test_from))
@@ -764,23 +570,21 @@ class FinCapstone():
 
 			if best_loss is None:
 				best_loss = [itr_epoch, valid_eval["mse"]]
-				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", itr_epoch))
-				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 			else:
 				if valid_eval["mse"] < best_loss[1]:
 					print("New Best epoch.")
 					best_loss = [itr_epoch, valid_eval["mse"]]
 
-					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET", itr_epoch))
-					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, "MARKET"))
+					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
+					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 
 				if (itr_epoch - best_loss[0]) > 5:
 					print("Not improving for 5 epochs. Stopping.")
 					break;
 
 		return model
-
-
 
 	def evaluate_scenarioc(self, model, data):
 		_r = [None] * 2
@@ -959,38 +763,6 @@ class FinCapstone():
 
 
 		return _r
-
-	# def store_scenarioa_features(self, features_df, ticker):
-		
-	# 	return scenarioa.store_scenarioa_features(features_df, ticker)
-
-	# def load_scenarioa_features(self, ticker, parseDate=True):
-		
-	# 	return scenarioa.load_scenarioa_features(ticker, parseDate)
-
-	# def store_scenarioa_labels(self, features_df, ticker):
-		
-	# 	return scenarioa.store_scenarioa_labels(features_df, ticker)
-
-	# def load_scenarioa_labels(self, ticker, parseDate=True):
-		
-	# 	return scenarioa.load_scenarioa_labels(ticker, parseDate)
-
-	# def store_scenariob_features(self, features_df, ticker):
-		
-	# 	return scenariob.store_scenariob_features(features_df, ticker)
-
-	# def load_scenariob_features(self, ticker, parseDate=True):
-		
-	# 	return scenariob.load_scenariob_features(ticker, parseDate)
-
-	# def store_scenariob_labels(self, features_df, ticker):
-		
-	# 	return scenariob.store_scenariob_labels(features_df, ticker)
-
-	# def load_scenariob_labels(self, ticker, parseDate=True):
-		
-	# 	return scenariob.load_scenariob_labels(ticker, parseDate)
 
 	def store_scenarioc_features(self, features_df, ticker):
 		
