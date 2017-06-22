@@ -189,12 +189,10 @@ def calc_labels(raw_df, verbose=True):
 	result_df["RETURN_1"] = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
 	result_df["RETURN_30"] = ((raw_df["Close"] / raw_df["Close"].shift(30)) - 1)
 	result_df["RETURN_60"] = ((raw_df["Close"] / raw_df["Close"].shift(60)) - 1)
-	result_df["RETURN_200"] = ((raw_df["Close"] / raw_df["Close"].shift(200)) - 1)
 
 	result_df["RETURN_1"] = result_df["RETURN_1"].shift(-1)
 	result_df["RETURN_30"] = result_df["RETURN_30"].shift(-30)
 	result_df["RETURN_60"] = result_df["RETURN_60"].shift(-60)
-	result_df["RETURN_200"] = result_df["RETURN_200"].shift(-200)
 
 	result_df.where(~np.isnan(result_df), TINY_FLOAT, inplace=True)
 	result_df.where(-np.isinf(result_df), TINY_FLOAT, inplace=True)
@@ -256,7 +254,6 @@ def create_model():
 	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
 	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
 	model.add(Dense(3, kernel_initializer='normal'))
-
 
 	model.compile(loss='mean_squared_error', optimizer='adam')
 

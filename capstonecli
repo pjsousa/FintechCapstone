@@ -161,7 +161,7 @@ if __name__ == "__main__":
 	ap.add_argument("--fencode", required=False, help="Perform feature encoding on the specified block.")
 	ap.add_argument("--name", required=True, help="The model name.")
 	ap.add_argument("--scenario", required=False, help="The scenario to use.")
-	ap.add_argument("--subsample_encode", required=False, help="The subsampling probability [0 - 100]")
+	ap.add_argument("--subsample", required=False, help="The subsampling probability [0 - 100]")
 
 
 	args = None
@@ -186,20 +186,20 @@ if __name__ == "__main__":
 		exec_fengineer(args["name"], args["scenario"], args["microtlist"])
 
 	if not(args["fencode"] is None):
-		if args["subsample_encode"] is None:
-			_subsample_encode = 0.5
+		if args["subsample"] is None:
+			_subsample = 0.5
 		else:
-			_subsample_encode = float(args["subsample_encode"]) / 100.0
+			_subsample = float(args["subsample"]) / 100.0
 
-		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample_encode)
+		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample)
 
 	if args["train"]:
-		if args["subsample_encode"] is None:
-			_subsample_encode = 0.5
+		if args["subsample"] is None:
+			_subsample = 0.5
 		else:
-			_subsample_encode = float(args["subsample_encode"]) / 100.0
+			_subsample = float(args["subsample"]) / 100.0
 
-		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample_encode)
+		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample)
 
 
 

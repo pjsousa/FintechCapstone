@@ -41,9 +41,9 @@ class FinCapstone():
 				ticker_list=None,
 				timespan=None,
 				timespan_ab=None,
-				train_from="2010-01-01",
+				train_from="2010-02-15",
 				train_until="2014-12-31",
-				test_from="2015-01-01",
+				test_from="2016-02-15",
 				test_until="2016-12-31",
 				encode_workpages=7,
 				bins=None):
