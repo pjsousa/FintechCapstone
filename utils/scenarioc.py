@@ -217,43 +217,46 @@ def prepare_problemspace(ticker_list, model_name):
 	return _tickers, _dates, _labels
 
 
-def create_model():
+def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=2):
 	model = Sequential()
 
 	# Block 1
-	model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1', input_shape=(224,224,3)))
-	model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2'))
+	model.add(Conv2D(64, filter_shape, activation='relu', padding='same', name='block1_conv1', input_shape=input_shape))
+	model.add(Conv2D(64, filter_shape, activation='relu', padding='same', name='block1_conv2'))
 	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool'))
 
 	# Block 2
-	model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1'))
-	model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2'))
+	model.add(Conv2D(128, filter_shape, activation='relu', padding='same', name='block2_conv1'))
+	model.add(Conv2D(128, filter_shape, activation='relu', padding='same', name='block2_conv2'))
 	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool'))
 
 	# Block 3
-	model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1'))
-	model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2'))
-	model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3'))
+	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', name='block3_conv1'))
+	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', name='block3_conv2'))
+	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', name='block3_conv3'))
 	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool'))
 
 	# Block 4
-	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1'))
-	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2'))
-	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block4_conv1'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block4_conv2'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block4_conv3'))
 	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool'))
 
 	# Block 5
-	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1'))
-	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2'))
-	model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block5_conv1'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block5_conv2'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block5_conv3'))
 	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool'))
 
 
 	# FC
 	model.add(Flatten())
-	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
-	model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
-	model.add(Dense(3, kernel_initializer='normal'))
+
+	for i in range(FC_layers):
+		model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+
+	#model.add(Dense(output_size, kernel_initializer='normal'))
+	model.add(Dense(output_size, kernel_initializer='normal'))
 
 	model.compile(loss='mean_squared_error', optimizer='adam')
 
