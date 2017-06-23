@@ -194,6 +194,8 @@ def calc_labels(raw_df, verbose=True):
 	result_df["RETURN_30"] = result_df["RETURN_30"].shift(-30)
 	result_df["RETURN_60"] = result_df["RETURN_60"].shift(-60)
 
+	result_df = np.around(result_df, 4)
+
 	result_df.where(~np.isnan(result_df), TINY_FLOAT, inplace=True)
 	result_df.where(-np.isinf(result_df), TINY_FLOAT, inplace=True)
 
