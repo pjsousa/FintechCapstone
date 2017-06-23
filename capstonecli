@@ -76,7 +76,7 @@ def exec_fengineer(model_name, scenario, microtlist):
 
 	trial.feature_engineering()
 
-def exec_training(model_name, scenario, microtlist, useSample=None):
+def exec_training(model_name, scenario, microtlist, useSample, input_shape, filter_shape, output_size, FC_layers):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -105,9 +105,10 @@ def exec_training(model_name, scenario, microtlist, useSample=None):
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.train(train_next=1, nb_epoch=2000, useSample=useSample)
+	trial.train(train_next=1, nb_epoch=2000, useSample=useSample, input_shape=input_shape, filter_shape=filtersize, output_size=output_size, FC_layers=FC_layers)
 
-def exec_fencode(model_name, scenario, microtlist, work_page, useSample):
+
+def exec_fencode(model_name, scenario, microtlist, work_page, useSample, size, bins):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -137,7 +138,7 @@ def exec_fencode(model_name, scenario, microtlist, work_page, useSample):
 		, reset_status=False)
 
 	#trial.train(train_next=1, nb_epoch=5)
-	trial.feature_encoding(work_page=work_page, useSample=useSample)
+	trial.feature_encoding(work_page=work_page, useSample=useSample, timespan=size, bins=bins)
 
 
 """
@@ -162,6 +163,12 @@ if __name__ == "__main__":
 	ap.add_argument("--name", required=True, help="The model name.")
 	ap.add_argument("--scenario", required=False, help="The scenario to use.")
 	ap.add_argument("--subsample", required=False, help="The subsampling probability [0 - 100]")
+	ap.add_argument("--size", required=False, help="The image side size for the mtf encoding. Used in --fencode and --train")
+	ap.add_argument("--bins", required=False, help="The number of bins when performing the mtf encoding.")
+	ap.add_argument("--filtersize", required=False, help="The filter side size for the convolutions.")
+	ap.add_argument("--noutputs", required=False, help="The number of outputs of the model.")
+	ap.add_argument("--FCBlocks", required=False, help="The number of fully connected blocks in the model.")
+	ap.add_argument("--arch", required=False, help="Copies and renames the current status files of the specified model_name into an --arch name. Also copies last weights files.")
 
 
 	args = None
@@ -169,6 +176,21 @@ if __name__ == "__main__":
 		args = vars(ap.parse_args())
 	except:
 		ap.print_help()
+		print("Examples: ")
+		print("Calling a fetch session:")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --fetch")
+		print("\n\nCalling a feature engineering session:")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --fengineer")
+		print("\n\nCalling a feature encoding session to run the first 'page' and subsampling half of the images")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 0.5 --fencode 0")
+		print("\n\nAlso calling a feature encoding session but creating 120x120 images and 60 bins for the timeseries quantization.")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --size 100 --bins 60 --fencode 0")
+		print("\n\Calling a training session.")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --train")
+		print("\n\Calling a training session that also uses a sample of the images in disk.")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 0.5 --train")
+		print("\n\Calling a training session and overriding the model dimensions.")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --size 100 --filtersize 5 --noutputs 1 --FCBlocks 2 --train")
 
 	if args is None:
 		sys.exit()
@@ -187,19 +209,50 @@ if __name__ == "__main__":
 
 	if not(args["fencode"] is None):
 		if args["subsample"] is None:
-			_subsample = 0.5
+			_subsample = 1.0
 		else:
 			_subsample = float(args["subsample"]) / 100.0
 
-		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample)
+		if args["size"] is None :
+			_size = 224
+		else:
+			_size = int(args["size"])
+
+		if args["bins"] is None :
+			_bins = 100
+		else:
+			_bins = int(args["bins"])
+
+		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample, _size, _bins)
 
 	if args["train"]:
 		if args["subsample"] is None:
-			_subsample = 0.5
+			_subsample = 1.0
 		else:
 			_subsample = float(args["subsample"]) / 100.0
 
-		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample)
+		if args["size"] is None :
+			_size = (224, 224, 3)
+		else:
+			_size = (int(args["size"]), int(args["size"]), 3)
+
+		if args["filtersize"] is None :
+			_filtersize = (3, 3)
+		else:
+			_filtersize = (int(args["filtersize"]), int(args["filtersize"]))
+
+		if args["noutputs"] is None :
+			_noutputs = 3
+		else:
+			_noutputs = int(args["noutputs"])
+
+		if args["FCBlocks"] is None :
+			_FCBlocks = 4
+		else:
+			_FCBlocks = int(args["FCBlocks"])
+
+
+		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample, _size, _filtersize, _noutputs, _FCBlocks)
 
 
 
