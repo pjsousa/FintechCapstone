@@ -20,6 +20,7 @@ from utils import paths_helper as paths
 
 import argparse
 import os
+import sys
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -160,44 +161,41 @@ class FinCapstone():
 		scenario = self.scenario if scenario is None else scenario
 		## Only work with tickers that were successfull during datafetch
 		ticker_list = self.provision_validtickerlist()
+		ticker_count = len(ticker_list)
+		itr_count = 0
 		work_df = None
 		iserror = None
 
+		print("\n{} - Feature/Label Engineering - {} - [{} ; {}] ".format(datetime.datetime.now(), scenario, self.date_from, self.date_to))
+
 		for ix, row in ticker_list.iterrows():
+			itr_count += 1
 			try:
 				_start = datetime.datetime.now()
 				itr_ticker = ix
-				print("\n\n - {} - \n".format(itr_ticker))
-				itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=True)
+				
+				
+				itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=False)
+
 				
 				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
 				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
 
 				if scenario == "baseline":
+					print_progress("  ({}/{}) - Calculating Features {}".format(itr_count, ticker_count, itr_ticker))
 					work_df = baseline_model.calc_features(itr_df,verbose=True)
 					self.store_baseline_features(work_df, itr_ticker)
 
+					print_progress("  ({}/{}) - Calculating Labels {}".format(itr_count, ticker_count, itr_ticker))
 					work_df = baseline_model.calc_labels(itr_df, self.timespan, verbose=True)
 					self.store_baseline_labels(work_df, itr_ticker)
-				elif scenario == "scenarioa":
-					itr_df.set_index("Date", inplace=True)
-					work_df = scenarioa.calc_features(itr_df, normalize=True, verbose=True)
-					self.store_scenarioa_features(work_df, itr_ticker)
-
-					work_df = scenarioa.calc_labels(itr_df, verbose=True)
-					self.store_scenarioa_labels(work_df, itr_ticker)
-				elif scenario == "scenariob":
-					itr_df.set_index("Date", inplace=True)
-					work_df = scenariob.calc_features(itr_df, normalize=True, verbose=True)
-					self.store_scenariob_features(work_df, itr_ticker)
-
-					work_df = scenariob.calc_labels(itr_df, verbose=True)
-					self.store_scenariob_labels(work_df, itr_ticker)
 				elif scenario == "scenarioc":
+					print_progress("  ({}/{}) - Calculating Features {}".format(itr_count, ticker_count, itr_ticker))
 					itr_df.set_index("Date", inplace=True)
 					work_df = scenarioc.calc_features(itr_df, verbose=True)
 					self.store_scenarioc_features(work_df, itr_ticker)
 
+					print_progress("  ({}/{}) - Calculating Labels {}".format(itr_count, ticker_count, itr_ticker))
 					work_df = scenarioc.calc_labels(itr_df, verbose=True)
 					self.store_scenarioc_labels(work_df, itr_ticker)
 				else:
@@ -215,14 +213,19 @@ class FinCapstone():
 				self.store_status_files()
 				iserror = True
 
+		print("\n{} - Feature/Label Engineering Finished".format(datetime.datetime.now()))
+
 		self.trialconfig_df.loc["featureengineer_status","value"] = "ERRORS" if iserror else "COMPLETE"
 		self.store_status_files()
 
 
 
-	def feature_encoding(self, scenario=None, work_page=None, useSample=None):
+	def feature_encoding(self, scenario=None, work_page=None, useSample=None, timespan=224, bins=100):
 		scenario = self.scenario if scenario is None else scenario
 		_skip = False
+		_skip_count = 0
+		_done_count = 0
+		_err_count = 0
 		
 		number_pages = self.encode_workpages
 
@@ -231,7 +234,7 @@ class FinCapstone():
 		tickers = self.valid_ticker_list()
 		dates = [ datetime.datetime.strftime(x, "%Y-%m-%d") for x in pd.date_range(start=self.date_from, end=self.date_to)]
 
-		_todo = [tickers, dates, [100], [224], [self.model_name]]
+		_todo = [tickers, dates, [bins], [timespan], [self.model_name]]
 		_todo = [x for x in itertools.product(*_todo)]
 
 		# if work_page is defined, slice by the given page
@@ -239,41 +242,50 @@ class FinCapstone():
 			page_size = int(np.ceil(len(_todo) / number_pages))
 			_todo = _todo[page_size*work_page:page_size*(work_page + 1)]
 			_status_df = self.__dict__["encode_status_df_%d" % work_page]
-			print("Encoding page %d" % work_page)
 
 		itr_keys = ["itr_ticker", "itr_date", "n_states", "timespans"]
+
+		print("\n{} - F. Encoding - {} - Page {} - Timespan {} - N_BINS {}".format(datetime.datetime.now(), scenario, work_page, timespan, bins))
+		print("{} Tickers - {} Dates - Sampling {} observations with {} change".format(len(tickers), len(dates),len(_todo), useSample))
 
 		for itr in _todo:
 			_start = datetime.datetime.now()
 
 			try:
 				if (useSample is not None) and (np.random.rand() > useSample):
-					print("Skip. {} {}".format(itr[0], itr[1]))
+					#print("Skip. {} {}".format(itr[0], itr[1]))
+					_skip_count += 1
 					continue
 
 				if scenarioc.check_encoding_exists(itr[0], self.model_name, itr[1]):
-					print("File Exists. {} {}".format(itr[0], itr[1]))
+					#print("File Exists. {} {}".format(itr[0], itr[1]))
+					_skip_count += 1
 					continue
 
 				mtf = scenarioc.transform_features(*itr)
 
 				self.store_scenarioc_encodings(mtf, itr[0], self.model_name, itr[1])
-				print("Done. {} {}".format(itr[0], itr[1]))
-
+				_done_count += 1
+				print_progress("  Last encoding {} {} [{} Done] [{} Skipped] [{} Weekend/Holiday]".format(itr[0], itr[1], _done_count, _skip_count, _err_count))
 				
 				_status_df.loc[(itr[0], itr[1]), "start"] = _start
 				_status_df.loc[(itr[0], itr[1]), "end"] = datetime.datetime.now()
 				_status_df.loc[(itr[0], itr[1]), "status"] = "OK"
 
 			except KeyError:
-				print("KeyError {}.".format(itr))
+				_err_count += 1
+				#print("KeyError {}.".format(itr))
 			except Exception as e:
 				_status_df.loc[(itr[0], itr[1]), "start"] = _start
 				_status_df.loc[(itr[0], itr[1]), "end"] = datetime.datetime.now()
 				_status_df.loc[(itr[0], itr[1]), "status"] = "NOK"
 				_status_df.loc[(itr[0], itr[1]), "msg"] = str(e)
+				_err_count += 1
 
 			self.store_encodestatus_files(work_page)
+
+		print_progress("  Last encoding {} {} [{} Done] [{} Skipped] [{} Weekend/Holiday]".format(itr[0], itr[1], _done_count, _skip_count, _err_count))
+		print("\n{} - F. Encoding Finished- Page {}".format(datetime.datetime.now(), work_page))
 
 
 
@@ -295,12 +307,14 @@ class FinCapstone():
 
 
 
-	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None):
+	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6):
 		## train only one specific ticker
 		work_tickers = None
 		_start = None
 		iserror = False
 		model = None
+
+		print("\n{} - Train Session - {} - {} epochs - Ticker {}".format(datetime.datetime.now(), self.scenario, nb_epoch, ticker))
 
 		if not(ticker is None):
 			work_tickers = [ticker]
@@ -331,7 +345,7 @@ class FinCapstone():
 					model = self.train_scenariob(itr_ticker, nb_epoch)
 				elif self.scenario == "scenarioc":
 					
-					model = self.train_scenarioc(nb_epoch, useSample)
+					model = self.train_scenarioc(nb_epoch, useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers)
 
 				else:
 					model = None
@@ -506,7 +520,7 @@ class FinCapstone():
 
 		return _r
 
-	def train_scenarioc(self, nb_epoch=100, useSample=None):
+	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4):
 		X_train = None
 		y_train = None
 		X_test = None
@@ -517,8 +531,15 @@ class FinCapstone():
 		X_batch = None
 		y_batch = None
 		best_loss = None
+		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
+		valid_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
+
 
 		print("Training Scenario C")
+		print("train_from={}, train_until={}, test_from={}, test_until={}".format(datetime.datetime.strftime(self.train_from, "%Y-%m-%d"), datetime.datetime.strftime(self.train_until, "%Y-%m-%d"), datetime.datetime.strftime(self.test_from, "%Y-%m-%d"), datetime.datetime.strftime(self.test_until, "%Y-%m-%d")))
+		print("input_shape={}, filter_shape={}, output_size={}, FC_layers={}".format(input_shape, filter_shape, output_size, FC_layers))
+		print("\n")
+
 
 		## load all label data and feature contexts for batch loading
 		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.model_name)
@@ -539,21 +560,20 @@ class FinCapstone():
 		_tickers_test = _tickers[_mask_test]
 		_dates_test = _dates[_mask_test]
 
-		model = scenarioc.create_model()
+		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
 
 		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, self.model_name)
 
 		for itr_epoch in range(nb_epoch):
 			_start = datetime.datetime.now()
-			print("Epoch", itr_epoch)
+			print_progress("  Epoch {} - TRAINING ".format(itr_epoch))
 
 			scenarioc.train(model, _dates_train, _tickers_train, _labels, self.model_name, feature_mean, feature_std)
 
+			print_progress("  Epoch {} - EVAL. TRAIN ".format(itr_epoch))
 			train_eval = scenarioc.evaluate(model, _dates_train, _tickers_train, _labels, self.model_name, feature_mean, feature_std)
+			print_progress("  Epoch {} - EVAL. TEST ".format(itr_epoch))
 			valid_eval = scenarioc.evaluate(model, _dates_test, _tickers_test, _labels, self.model_name, feature_mean, feature_std)
-
-			print("Train Eval: ", train_eval)
-			print("Test Eval: ", valid_eval)
 
 			self.eval_status_df.loc[("Nan", itr_epoch), "status"] = "COMPLETE"
 			self.eval_status_df.loc[("Nan", itr_epoch), "start"] = _start
@@ -570,19 +590,23 @@ class FinCapstone():
 
 			if best_loss is None:
 				best_loss = [itr_epoch, valid_eval["mse"]]
+				print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 			else:
 				if valid_eval["mse"] < best_loss[1]:
-					print("New Best epoch.")
 					best_loss = [itr_epoch, valid_eval["mse"]]
 
+					print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
 					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
+
 
 				if (itr_epoch - best_loss[0]) > 5:
 					print("Not improving for 5 epochs. Stopping.")
 					break;
+			print_progress("  Epoch {} - [M, R, A] - [{:.6f},{:.6f},{:.6f}] [{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_loss[0] == 0 else "")))
+			print("\n")
 
 		return model
 
@@ -810,6 +834,11 @@ class FinCapstone():
 		self._step_f = datetime.datetime.now()
 		self._end = self._step_f
 		print(" V  END       - {} (TOOK {})".format(str(self._end), str(self._end - self._start)))
+
+def print_progress(str_output):
+	sys.stdout.write('\r')
+	sys.stdout.write(str_output)
+	sys.stdout.flush()
 
 
 def setup():

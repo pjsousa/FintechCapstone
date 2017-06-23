@@ -217,7 +217,7 @@ def prepare_problemspace(ticker_list, model_name):
 	return _tickers, _dates, _labels
 
 
-def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=2):
+def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6):
 	model = Sequential()
 
 	# Block 1
@@ -333,7 +333,7 @@ def train(model, dates, tickers, labels, model_name, features_mean, features_std
 			model.fit(X_batch, y_batch, epochs=1, batch_size=32, verbose=0)
 
 	except StopIteration:
-		print("Finished Training:")
+		v = None
 	
 	return model
 
@@ -361,7 +361,7 @@ def evaluate(model, dates, tickers, labels, model_name, features_mean, features_
 			y_true.append(y_batch)
 
 	except StopIteration:
-		print("Finished Eval")
+		v = None
 
 	y_true = np.concatenate(y_true)
 	y_pred = np.concatenate(y_pred)

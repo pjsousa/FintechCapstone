@@ -1,5 +1,19 @@
 #!/bin/bash
 
+#./capstonecli --name FullScenarioC --scenario scenarioc --fetch --fengineer
+
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 0
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 1
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 2
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 3
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 4
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 5
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 6
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --fencode 7
+
+#./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --train
+
+
 
 cmd="./capstonecli --name FullScenarioC --scenario scenarioc --subsample 0.7531 --train"
 eval $cmd

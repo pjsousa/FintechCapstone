@@ -3,6 +3,7 @@ import datetime
 import pandas as pd
 import io
 import requests
+import sys
 
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
@@ -25,7 +26,11 @@ _URLS["nasdaq100"] = "http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx?render
 _URLS["nyse"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=nyse&render=download"
 _URLS["amex"] = "http://www.nasdaq.com/screening/companies-by-name.aspx?letter=0&exchange=amex&render=download"
 
-
+def print_progress(str_output):
+	sys.stdout.write('\r')
+	# the exact output you're looking for:
+	sys.stdout.write(str_output)
+	sys.stdout.flush()
 
 def fetch_quotes(ticker, from_date=datetime.datetime(2005, 1, 1), to_date=datetime.datetime.now(), source="google"):
 	"""
@@ -155,15 +160,19 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 
 	itr_df = None
 	itr_err = None
+	err_count = 0
 	filepath = "{}/{}.csv"
 	_len = len(ticker_list)
 	_start = datetime.datetime.now()
+
+	print("{} - Fetching {} tickers".format(_start, len(ticker_list)))
 
 	for idx, itr_tkr in enumerate(ticker_list):
 		_start = datetime.datetime.now()
 		itr_df = fetch_quotes(itr_tkr)
 		if itr_df is None:
 			itr_err = True
+			err_count += 1
 		else:
 			itr_err = False
 			itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8")
@@ -171,15 +180,14 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 				del itr_df
 
 		if verbose:
-			if itr_err:
-				print("({}/{}) ERROR receiving {}".format(idx + 1, _len, itr_tkr))
-			else:
-				print("({}/{}) Recv. and Stored {}".format(idx + 1, _len, itr_tkr))
+			print_progress("  Fetching {} - ({}/{}) [{} skipped]".format(itr_tkr, idx + 1, _len, err_count))
 
 		if not(status_df is None):
 			status_df.loc[itr_tkr, "status"] = "NOK" if itr_err else "OK"
 			status_df.loc[itr_tkr, "start"] = _start
 			status_df.loc[itr_tkr, "end"] = datetime.datetime.now()
+
+	print("\n{} - Fetching Finished".format(datetime.datetime.now()))
 
 	return None
 
@@ -213,8 +221,9 @@ def load_raw_frame(ticker, tryfetch=True, parseDate=True, dropAdjClose=False):
 			_r["High"] = _r["High"] / close_ratio
 			_r["Low"] = _r["Low"] / close_ratio
 			_r["Close"] = _r["Adj Close"]
+
 			_r.drop("Adj Close", axis=1, inplace=True)
-	except:
+	except Exception as e:
 		if tryfetch:
 			initial_dataload([ticker], False, True)
 			_r = load_raw_frame(ticker, False)
