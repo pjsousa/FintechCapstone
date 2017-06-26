@@ -63,7 +63,7 @@
 
 ENCODE_SIZES=(40 60 100 224)
 BIN_SIZES=(100 50 20)
-STRIDE=(3 5 10)
+STRIDE=(3 5 7)
 SAMPLE=(10 20 30 40 50 60 70 80 90 100)
 
 itr_subsample=-1
@@ -78,23 +78,24 @@ for itr_size in "${ENCODE_SIZES[@]}"
 do
 	for itr_subsample in "${SAMPLE[@]}"
 	do
-		itr_stride=3
-		itr_earlystop=10
-		itr_bin=100
+		for itr_stride in "${STRIDE[@]}"
+		do
+			for itr_bin in "${BIN_SIZES[@]}"
+			do
+				itr_earlystop=30
 
-		modelname="FullScenarioC_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
+				modelname="FullScenarioC_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
 
-
-		cmd="./capstonecli --name $modelname --scenario scenarioc --fetch"
-		eval $cmd
-		cmd="./capstonecli --name $modelname --scenario scenarioc --fengineer"
-		eval $cmd
-		cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
-		eval $cmd
+				cmd="./capstonecli --name $modelname --scenario scenarioc --fetch"
+				eval $cmd
+				cmd="./capstonecli --name $modelname --scenario scenarioc --fengineer"
+				eval $cmd
+				cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
+				eval $cmd
 	done
 done
 
-# TEST DIFERENT BIN SIZES
+# # TEST DIFERENT BIN SIZES
 # for itr_bin in "${BIN_SIZES[@]}"
 # do
 # 	for itr_subsample in "${SAMPLE[@]}"
@@ -115,8 +116,8 @@ done
 # 	done
 # done
 
-# TEST DIFERENT STRIDE SIZES
-# for itr_stride in "${ENCODE_SIZES[@]}"
+# # TEST DIFERENT STRIDE SIZES
+# for itr_stride in "${STRIDE[@]}"
 # do
 # 	for itr_subsample in "${SAMPLE[@]}"
 # 	do
