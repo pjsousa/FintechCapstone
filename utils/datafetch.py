@@ -139,7 +139,6 @@ def duplicate_tickers(df, ign_exchange=False):
 	if ign_exchange:
 		_r["ignoring_exchange"] = _r.duplicated(["Symbol", "Name", "LastSale", "MarketCap", "IPOyear", "Sector", "industry", "Summary Quote"])
 
-
 	return _r
 
 
@@ -180,6 +179,8 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 				itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8")
 				if del_temp:
 					del itr_df
+		else:
+			itr_err = False
 
 		if verbose:
 			print_progress("  Fetching {} - ({}/{}) [{} skipped]".format(itr_tkr, idx + 1, _len, err_count))
