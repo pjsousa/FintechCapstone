@@ -169,15 +169,18 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 
 	for idx, itr_tkr in enumerate(ticker_list):
 		_start = datetime.datetime.now()
-		itr_df = fetch_quotes(itr_tkr)
-		if itr_df is None:
-			itr_err = True
+		if os.path.isfile(filepath.format(DATA_PATH, itr_tkr)):
 			err_count += 1
 		else:
-			itr_err = False
-			itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8")
-			if del_temp:
-				del itr_df
+			itr_df = fetch_quotes(itr_tkr)
+			if itr_df is None:
+				itr_err = True
+				err_count += 1
+			else:
+				itr_err = False
+				itr_df.to_csv(filepath.format(DATA_PATH, itr_tkr), encoding="utf-8")
+				if del_temp:
+					del itr_df
 
 		if verbose:
 			print_progress("  Fetching {} - ({}/{}) [{} skipped]".format(itr_tkr, idx + 1, _len, err_count))

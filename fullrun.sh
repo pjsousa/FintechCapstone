@@ -71,7 +71,8 @@
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 224 --bins 20 --fencode 6
 
 
-ENCODE_SIZES=(40 60 100 224)
+#ENCODE_SIZES=(224 100 60 40)
+ENCODE_SIZES=(224)
 BIN_SIZES=(100 50 20)
 STRIDE=(3 5 10)
 SAMPLE=(10 20 30 40 50 60 70 80 90 100)
