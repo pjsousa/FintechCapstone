@@ -262,7 +262,7 @@ class FinCapstone():
 					_skip_count += 1
 					continue
 
-				mtf = scenarioc.transform_features(*itr)
+				mtf = scenarioc.encode_features(*itr)
 
 				self.store_scenarioc_encodings(mtf, itr[0], self.model_name, itr[1])
 				_done_count += 1
@@ -307,7 +307,7 @@ class FinCapstone():
 
 
 
-	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6):
+	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5):
 		## train only one specific ticker
 		work_tickers = None
 		_start = None
@@ -345,7 +345,7 @@ class FinCapstone():
 					model = self.train_scenariob(itr_ticker, nb_epoch)
 				elif self.scenario == "scenarioc":
 					
-					model = self.train_scenarioc(nb_epoch, useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers)
+					model = self.train_scenarioc(nb_epoch, useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop)
 
 				else:
 					model = None
@@ -520,7 +520,7 @@ class FinCapstone():
 
 		return _r
 
-	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4):
+	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5):
 		X_train = None
 		y_train = None
 		X_test = None
@@ -602,7 +602,7 @@ class FinCapstone():
 					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 
 
-				if (itr_epoch - best_loss[0]) > 5:
+				if (itr_epoch - best_loss[0]) > earlystop:
 					print("Not improving for 5 epochs. Stopping.")
 					break;
 			print_progress("  Epoch {} - [M, R, A] - [{:.6f},{:.6f},{:.6f}] [{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_loss[0] == 0 else "")))
@@ -722,13 +722,14 @@ class FinCapstone():
 		if(not(work_page is None)):
 			self.__dict__["encode_status_df_%d" % work_page].to_csv("{}_encode_status_df_{}.tmp".format(self.model_name, work_page))
 
-	def store_status_files(self):
-		self.trialconfig_df.to_csv("{}_trialconfig.tmp".format(self.model_name))
-		self.fetchstatus_df.to_csv("{}_fetchstatus.tmp".format(self.model_name))
-		self.featureengineer_status_df.to_csv("{}_featureengineer_status.tmp".format(self.model_name))
-		self.train_status_df.to_csv("{}_train_status.tmp".format(self.model_name))
-		self.eval_status_df.to_csv("{}_eval_status.tmp".format(self.model_name))
-		self.encode_status_df.to_csv("{}_encode_status_df.tmp".format(self.model_name))
+	def store_status_files(self, model_name=None):
+		model_name = self.model_name if model_name is None else model_name
+		self.trialconfig_df.to_csv("{}_trialconfig.tmp".format(model_name))
+		self.fetchstatus_df.to_csv("{}_fetchstatus.tmp".format(model_name))
+		self.featureengineer_status_df.to_csv("{}_featureengineer_status.tmp".format(model_name))
+		self.train_status_df.to_csv("{}_train_status.tmp".format(model_name))
+		self.eval_status_df.to_csv("{}_eval_status.tmp".format(model_name))
+		self.encode_status_df.to_csv("{}_encode_status_df.tmp".format(model_name))
 
 	def load_status_files(self):
 		self.trialconfig_df = pd.read_csv("{}_trialconfig.tmp".format(self.model_name))
@@ -797,9 +798,9 @@ class FinCapstone():
 		return scenarioc.load_scenarioc_features(ticker, parseDate)
 
 
-	def store_scenarioc_encodings(self, feature_data, ticker, modelname, date):
+	def store_scenarioc_encodings(self, feature_data, ticker, date, timespan, bins):
 		
-		return scenarioc.store_scenarioc_encodings(feature_data, ticker, modelname, date)
+		return scenarioc.store_scenarioc_encodings(feature_data, ticker, date, timespan, bins)
 
 	def load_scenarioc_encodings(self, ticker, modelname, date):
 		

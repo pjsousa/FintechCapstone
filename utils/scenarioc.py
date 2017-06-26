@@ -145,7 +145,7 @@ def markov_transition_field(serie, n_states, min_val, max_val):
 	return M
 
 
-def transform_features(ticker, itr_date, n_states, timespan, modelname):
+def encode_features(ticker, itr_date, n_states, timespan, modelname):
 	_result = []
 
 	features_df = load_scenarioc_features(ticker, parseDate=False)
@@ -396,18 +396,18 @@ def load_scenarioc_features(ticker, parseDate=True):
 
 	return _r
 
-def check_encoding_exists(ticker, modelname, date):
-	return os.path.isfile("{}/MTFIELD_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, modelname, date))
+def check_encoding_exists(ticker, date, timespan, bins):
+	return os.path.isfile("{}/MTFIELD_{}_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, date, timespan, bins))
 
-def store_scenarioc_encodings(feature_data, ticker, modelname, date):
-	np.save("{}/MTFIELD_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, modelname, date), feature_data)
+def store_scenarioc_encodings(feature_data, ticker, date, timespan, bins):
+	np.save("{}/MTFIELD_{}_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, date, timespan, bins), feature_data)
 	return True
 
-def load_scenarioc_encodings(ticker, modelname, date):
+def load_scenarioc_encodings(ticker, date, timespan, bins):
 	_r = None
 
 	try:
-		_r = np.load("{}/MTFIELD_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, modelname, date))
+		_r = np.load("{}/MTFIELD_{}_{}_{}_{}.npy".format(paths.TRIALA_DATA_PATH, ticker, date, timespan, bins))
 	except:
 		_r = None
 
