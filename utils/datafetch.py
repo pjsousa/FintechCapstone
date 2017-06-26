@@ -170,9 +170,7 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 
 	for idx, itr_tkr in enumerate(ticker_list):
 		_start = datetime.datetime.now()
-		if os.path.isfile(filepath.format(DATA_PATH, itr_tkr)):
-			err_count += 1
-		else:
+		if not(os.path.isfile(filepath.format(DATA_PATH, itr_tkr))):
 			itr_df = fetch_quotes(itr_tkr)
 			if itr_df is None:
 				itr_err = True
