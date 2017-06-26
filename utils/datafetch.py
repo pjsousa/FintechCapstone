@@ -64,7 +64,7 @@ def download_companieslist(exchange):
 	c.to_csv("{}/tickers_{}.csv".format(CONFIG_PATH,exchange), index=False)
 
 
-def load_exchangesinfos(config_path=CONFIG_PATH, verbose=True, exchange=_EXCHANGES):
+def load_exchangesinfos(config_path=CONFIG_PATH, verbose=False, exchange=_EXCHANGES):
 	"""
 		Description:
 			<Description>
