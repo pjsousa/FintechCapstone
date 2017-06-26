@@ -202,7 +202,7 @@ def calc_labels(raw_df, verbose=True):
 	return result_df
 
 
-def prepare_problemspace(ticker_list, model_name):
+def prepare_problemspace(ticker_list, timespan, bins):
 	## Load the labels for every ticker
 	_labels = dict()
 
@@ -211,8 +211,8 @@ def prepare_problemspace(ticker_list, model_name):
 		_labels[itr_ticker].set_index("Date", inplace=True)
 
 	## Look into disk and list all TICKERS and DATES encodings
-	listing = glob.glob('./data/D_TRIALA/*%s*.npy' % model_name)
-	rx = "MTFIELD_(.*)_%s_(\d{4}-\d{2}-\d{2}).npy" % model_name
+	listing = glob.glob('./data/D_TRIALA/*_{}_{}.npy'.format(timespan, bins))
+	rx = "MTFIELD_(.*)_(\d{4}-\d{2}-\d{2})_{}_{}.npy".fiormat(timespan, bins)
 	_tickers = np.array([ re.search(rx, x).group(1) for x in listing ])
 	_dates = np.array([ pd.to_datetime(re.search(rx, x).group(2)) for x in listing ])
 
