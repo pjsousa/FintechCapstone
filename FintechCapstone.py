@@ -546,10 +546,8 @@ class FinCapstone():
 		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), timespan, bins)
 
 		if useSample:
-			print(_tickers.shape, _dates.shape)
 			_tickers = _tickers[:int(_tickers.shape[0] * useSample)]
 			_dates = _dates[:int(_dates.shape[0] * useSample)]
-			print(_tickers.shape, _dates.shape)
 		else:
 			useSample = 1.0
 
