@@ -92,6 +92,8 @@ do
 				eval $cmd
 				cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
 				eval $cmd
+			done
+		done
 	done
 done
 
