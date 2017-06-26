@@ -105,7 +105,7 @@ def exec_training(model_name, scenario, microtlist, useSample, input_shape, filt
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.train(train_next=1, nb_epoch=2000, useSample=useSample, input_shape=input_shape, filter_shape=filtersize, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop, timespan=size, bins=bins)
+	trial.train(train_next=1, nb_epoch=2000, useSample=useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop, timespan=size, bins=bins)
 
 
 def exec_fencode(model_name, scenario, microtlist, work_page, useSample, size, bins):
@@ -209,13 +209,13 @@ if __name__ == "__main__":
 		print("\n\nCalling a feature engineering session:")
 		print("./capstonecli --name FullScenarioC --scenario scenarioc --fengineer")
 		print("\n\nCalling a feature encoding session to run the first 'page' and subsampling half of the images")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 0.5 --fencode 0")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 50 --fencode 0")
 		print("\n\nAlso calling a feature encoding session but creating 120x120 images and 60 bins for the timeseries quantization.")
 		print("./capstonecli --name FullScenarioC --scenario scenarioc --size 100 --bins 60 --fencode 0")
 		print("\n\Calling a training session.")
 		print("./capstonecli --name FullScenarioC --scenario scenarioc --train")
 		print("\n\Calling a training session that also uses a sample of the images in disk.")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 0.5 --train")
+		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 50 --train")
 		print("\n\Calling a training session and overriding the model dimensions.")
 		print("./capstonecli --name FullScenarioC --scenario scenarioc --size 100 --filtersize 5 --noutputs 1 --FCBlocks 2 --train")
 
