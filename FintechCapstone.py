@@ -257,14 +257,14 @@ class FinCapstone():
 					_skip_count += 1
 					continue
 
-				if scenarioc.check_encoding_exists(itr[0], self.model_name, itr[1]):
+				if scenarioc.check_encoding_exists(itr[0], itr[1], itr[3], itr[2]):
 					#print("File Exists. {} {}".format(itr[0], itr[1]))
 					_skip_count += 1
 					continue
 
 				mtf = scenarioc.encode_features(*itr)
 
-				self.store_scenarioc_encodings(mtf, itr[0], self.model_name, itr[1])
+				self.store_scenarioc_encodings(mtf, itr[0], itr[1], itr[3], itr[2])
 				_done_count += 1
 				print_progress("  Last encoding {} {} [{} Done] [{} Skipped] [{} Weekend/Holiday]".format(itr[0], itr[1], _done_count, _skip_count, _err_count))
 				
@@ -520,7 +520,7 @@ class FinCapstone():
 
 		return _r
 
-	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5):
+	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100):
 		X_train = None
 		y_train = None
 		X_test = None
@@ -562,18 +562,18 @@ class FinCapstone():
 
 		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
 
-		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, self.model_name)
+		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
 
 		for itr_epoch in range(nb_epoch):
 			_start = datetime.datetime.now()
 			print_progress("  Epoch {} - TRAINING ".format(itr_epoch))
 
-			scenarioc.train(model, _dates_train, _tickers_train, _labels, self.model_name, feature_mean, feature_std)
+			scenarioc.train(model, _dates_train, _tickers_train, _labels, timespan, bins, feature_mean, feature_std)
 
 			print_progress("  Epoch {} - EVAL. TRAIN ".format(itr_epoch))
-			train_eval = scenarioc.evaluate(model, _dates_train, _tickers_train, _labels, self.model_name, feature_mean, feature_std)
+			train_eval = scenarioc.evaluate(model, _dates_train, _tickers_train, _labels, timespan, bins, feature_mean, feature_std)
 			print_progress("  Epoch {} - EVAL. TEST ".format(itr_epoch))
-			valid_eval = scenarioc.evaluate(model, _dates_test, _tickers_test, _labels, self.model_name, feature_mean, feature_std)
+			valid_eval = scenarioc.evaluate(model, _dates_test, _tickers_test, _labels, timespan, bins, feature_mean, feature_std)
 
 			self.eval_status_df.loc[("Nan", itr_epoch), "status"] = "COMPLETE"
 			self.eval_status_df.loc[("Nan", itr_epoch), "start"] = _start
@@ -802,9 +802,9 @@ class FinCapstone():
 		
 		return scenarioc.store_scenarioc_encodings(feature_data, ticker, date, timespan, bins)
 
-	def load_scenarioc_encodings(self, ticker, modelname, date):
+	def load_scenarioc_encodings(self, ticker, date, timespan, bins):
 		
-		return scenarioc.load_scenarioc_encodings(ticker, modelname, date)
+		return scenarioc.load_scenarioc_encodings(ticker, date, timespan, bins)
 
 	def store_scenarioc_labels(self, features_df, ticker):
 		

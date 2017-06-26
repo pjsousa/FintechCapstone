@@ -265,14 +265,14 @@ def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC
 	return model
 
 
-def seq_data(dates, tickers, labels, model_name):
+def seq_data(dates, tickers, labels, timespan, bins):
 	X = None
 	y = None
 	
 	for i in range(dates.shape[0]):
 		_iter = (dates[i], tickers[i])
 
-		X = load_scenarioc_encodings(_iter[1], model_name, datetime.date.strftime(_iter[0], "%Y-%m-%d"))
+		X = load_scenarioc_encodings(_iter[1], datetime.date.strftime(_iter[0], "%Y-%m-%d"), timespan, bins)
 		y = labels[_iter[1]].loc[_iter[0]].values
 		
 		## when X.shape is an empty tuple, we don't yield and go to the next iteration
@@ -283,8 +283,8 @@ def seq_data(dates, tickers, labels, model_name):
 			print("scenarioc.seq_data - X came NoneType", _iter, "\n")
 
 
-def seq_batch(dates, tickers, labels, model_name, batch_size=32):
-	seq = seq_data(dates, tickers, labels, model_name)
+def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
+	seq = seq_data(dates, tickers, labels, timespan, bins)
 	X = []
 	y = []
 	while True:
@@ -301,9 +301,9 @@ def seq_batch(dates, tickers, labels, model_name, batch_size=32):
 		
 		yield X, y
 
-def features_stats(dates, tickers, labels, model_name):
+def features_stats(dates, tickers, labels, timespan, bins):
 	_r = []
-	data_iterator = seq_batch(dates, tickers, labels, model_name)
+	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
 
 	try:
 		while True:
@@ -317,8 +317,8 @@ def features_stats(dates, tickers, labels, model_name):
 	return _r[:,0].mean(), np.sqrt(np.mean(_r[:,1]))
 
 
-def train(model, dates, tickers, labels, model_name, features_mean, features_std):
-	data_iterator = seq_batch(dates, tickers, labels, model_name)
+def train(model, dates, tickers, labels, timespan, bins, features_mean, features_std):
+	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
 	try:
 		while True:
 			X_batch, y_batch = next(data_iterator)
@@ -339,12 +339,12 @@ def train(model, dates, tickers, labels, model_name, features_mean, features_std
 	
 	return model
 
-def evaluate(model, dates, tickers, labels, model_name, features_mean, features_std):
+def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, features_std):
 	_r = dict()
 	y_true = []
 	y_pred = []
 
-	data_iterator = seq_batch(dates, tickers, labels, model_name)
+	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
 
 	try:
 		while True:
