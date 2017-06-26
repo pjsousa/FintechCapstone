@@ -4,6 +4,7 @@ import pandas as pd
 import io
 import requests
 import sys
+import os
 
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
