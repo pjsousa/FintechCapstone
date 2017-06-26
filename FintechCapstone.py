@@ -556,8 +556,15 @@ class FinCapstone():
 
 		_tickers_train = _tickers[_mask_train]
 		_dates_train = _dates[_mask_train]
+		
 		_tickers_test = _tickers[_mask_test]
 		_dates_test = _dates[_mask_test]
+
+		# we'll only look at some of our test data for validation. A subsample of 20% the size of our test data
+		_arr = np.arange(_tickers_test.shape[0])
+		np.random.shuffle(_arr)
+		_tickers_test[_arr[:int(np.ceil(_tickers_train.shape[0] * 0.2))]]
+		_dates_test[_arr[:int(np.ceil(_tickers_train.shape[0] * 0.2))]]
 
 		#model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
 		model = scenarioc.create_model(input_shape, filter_shape, 1, FC_layers)
