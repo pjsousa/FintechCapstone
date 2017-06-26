@@ -212,7 +212,7 @@ def prepare_problemspace(ticker_list, timespan, bins):
 
 	## Look into disk and list all TICKERS and DATES encodings
 	listing = glob.glob('./data/D_TRIALA/*_{}_{}.npy'.format(timespan, bins))
-	rx = "MTFIELD_(.*)_(\d{4}-\d{2}-\d{2})_{}_{}.npy".format(timespan, bins)
+	rx = "MTFIELD_(.*)_(\d{4}-\d{2}-\d{2})_" + str(timespan) + "_" + str(bins) + ".npy".format(timespan, bins)
 	_tickers = np.array([ re.search(rx, x).group(1) for x in listing ])
 	_dates = np.array([ pd.to_datetime(re.search(rx, x).group(2)) for x in listing ])
 
