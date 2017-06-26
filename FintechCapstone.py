@@ -307,7 +307,7 @@ class FinCapstone():
 
 
 
-	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5):
+	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100):
 		## train only one specific ticker
 		work_tickers = None
 		_start = None
@@ -345,7 +345,7 @@ class FinCapstone():
 					model = self.train_scenariob(itr_ticker, nb_epoch)
 				elif self.scenario == "scenarioc":
 					
-					model = self.train_scenarioc(nb_epoch, useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop)
+					model = self.train_scenarioc(nb_epoch, useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop, timespan=timespan, bins=bins)
 
 				else:
 					model = None
@@ -542,7 +542,7 @@ class FinCapstone():
 
 
 		## load all label data and feature contexts for batch loading
-		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), self.model_name)
+		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), timespan, bins)
 
 		if useSample:
 			print(_tickers.shape, _dates.shape)

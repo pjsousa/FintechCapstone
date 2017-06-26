@@ -76,7 +76,7 @@ def exec_fengineer(model_name, scenario, microtlist):
 
 	trial.feature_engineering()
 
-def exec_training(model_name, scenario, microtlist, useSample, input_shape, filter_shape, output_size, FC_layers, earlystop):
+def exec_training(model_name, scenario, microtlist, useSample, input_shape, filter_shape, output_size, FC_layers, earlystop, size, bins):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -105,7 +105,7 @@ def exec_training(model_name, scenario, microtlist, useSample, input_shape, filt
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.train(train_next=1, nb_epoch=2000, useSample=useSample, input_shape=input_shape, filter_shape=filtersize, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop)
+	trial.train(train_next=1, nb_epoch=2000, useSample=useSample, input_shape=input_shape, filter_shape=filtersize, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop, timespan=size, bins=bins)
 
 
 def exec_fencode(model_name, scenario, microtlist, work_page, useSample, size, bins):
@@ -259,9 +259,11 @@ if __name__ == "__main__":
 			_subsample = float(args["subsample"]) / 100.0
 
 		if args["size"] is None :
-			_size = (224, 224, 3)
+			_input_shape = (224, 224, 3)
+			_size = 224
 		else:
-			_size = (int(args["size"]), int(args["size"]), 3)
+			_input_shape = (int(args["size"]), int(args["size"]), 3)
+			_size = int(args["size"])
 
 		if args["filtersize"] is None :
 			_filtersize = (3, 3)
@@ -283,8 +285,23 @@ if __name__ == "__main__":
 		else:
 			_earlystop = int(args["earlystop"])
 
+		if args["bins"] is None :
+			_bins = 100
+		else:
+			_bins = int(args["bins"])
 
-		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample, _size, _filtersize, _noutputs, _FCBlocks, _earlystop)
+
+		exec_training(args["name"]
+						, args["scenario"]
+						, args["microtlist"]
+						, _subsample
+						, _input_shape
+						, _filtersize
+						, _noutputs
+						, _FCBlocks
+						, _earlystop
+						, _size
+						, _bins)
 
 	if args["arch"]:
 		exec_archive(args["name"], args["scenario"], args["arch"])
