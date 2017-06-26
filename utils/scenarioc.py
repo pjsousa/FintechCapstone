@@ -332,7 +332,7 @@ def train(model, dates, tickers, labels, timespan, bins, features_mean, features
 			## Normalize Features
 			X_batch = (X_batch - features_mean) / features_std
 
-			model.fit(X_batch, y_batch, epochs=1, batch_size=32, verbose=0)
+			model.fit(X_batch, y_batch[:,1], epochs=1, batch_size=32, verbose=0)
 
 	except StopIteration:
 		v = None
@@ -360,7 +360,7 @@ def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, featu
 			X_batch = (X_batch - features_mean) / features_std
 
 			y_pred.append(model.predict(X_batch, verbose=0))
-			y_true.append(y_batch)
+			y_true.append(y_batch[:,1])
 
 	except StopIteration:
 		v = None

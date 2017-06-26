@@ -559,7 +559,8 @@ class FinCapstone():
 		_tickers_test = _tickers[_mask_test]
 		_dates_test = _dates[_mask_test]
 
-		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
+		#model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
+		model = scenarioc.create_model(input_shape, filter_shape, 1, FC_layers)
 
 		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
 
