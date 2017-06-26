@@ -537,7 +537,7 @@ class FinCapstone():
 
 		print("Training Scenario C")
 		print("train_from={}, train_until={}, test_from={}, test_until={}".format(datetime.datetime.strftime(self.train_from, "%Y-%m-%d"), datetime.datetime.strftime(self.train_until, "%Y-%m-%d"), datetime.datetime.strftime(self.test_from, "%Y-%m-%d"), datetime.datetime.strftime(self.test_until, "%Y-%m-%d")))
-		print("input_shape={}, filter_shape={}, output_size={}, FC_layers={}".format(input_shape, filter_shape, output_size, FC_layers))
+		print("input_shape={}, bins={}, filter_shape={}, output_size={}, FC_layers={}".format(input_shape, bins, filter_shape, output_size, FC_layers))
 		print("\n")
 
 
@@ -603,7 +603,7 @@ class FinCapstone():
 
 
 				if (itr_epoch - best_loss[0]) > earlystop:
-					print("Not improving for 5 epochs. Stopping.")
+					print("Not improving for %s epochs. Stopping." % earlystop)
 					break;
 			print_progress("  Epoch {} - [M, R, A] - [{:.6f},{:.6f},{:.6f}] [{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_loss[0] == 0 else "")))
 			print("\n")
