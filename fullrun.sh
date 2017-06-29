@@ -12,6 +12,9 @@
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 50 --fencode 0
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 50 --fencode 0
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 50 --fencode 0
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 20 --fencode 0
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 20 --fencode 0
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 20 --fencode 0
 
 
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 1
@@ -24,6 +27,9 @@
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 50 --fencode 1
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 50 --fencode 1
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 50 --fencode 1
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 20 --fencode 1
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 20 --fencode 1
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 20 --fencode 1
 
 
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 2
@@ -36,6 +42,9 @@
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 50 --fencode 2
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 50 --fencode 2
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 50 --fencode 2
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 20 --fencode 2
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 20 --fencode 2
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 20 --fencode 2
 
 
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 3
@@ -48,6 +57,9 @@
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 50 --fencode 3
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 50 --fencode 3
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 50 --fencode 3
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 20 --fencode 3
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 20 --fencode 3
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 20 --fencode 3
 
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 4
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 100 --fencode 4
@@ -59,6 +71,9 @@
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 50 --fencode 4
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 50 --fencode 4
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 50 --fencode 4
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 20 --fencode 4
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 20 --fencode 4
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 20 --fencode 4
 
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 5
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 100 --fencode 5
@@ -70,6 +85,9 @@
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 50 --fencode 5
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 50 --fencode 5
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 50 --fencode 5
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 20 --fencode 5
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 20 --fencode 5
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 20 --fencode 5
 
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 6
 # ./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 100 --fencode 6
@@ -81,6 +99,10 @@
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 50 --fencode 6
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 50 --fencode 6
 ##########./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 50 --fencode 6
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 40 --bins 20 --fencode 6
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 60 --bins 20 --fencode 6
+./capstonecli --name FullScenarioC --scenario scenarioc --subsample 1.5062 --size 100 --bins 20 --fencode 6
+
 
 
 ### FULL
@@ -89,11 +111,17 @@
 # STRIDE=(3 5 7)
 # BIN_SIZES=(100 50 20)
 
-### BIN SIZE
+### BIN SIZE 50
 ENCODE_SIZES=(40 60 100)
 SAMPLE=(10 20 30 40 50 60 70 80 90 100)
 STRIDE=(3)
 BIN_SIZES=(50)
+
+### BIN SIZE 20
+# ENCODE_SIZES=(40 60 100)
+# SAMPLE=(10 20 30 40 50 60 70 80 90 100)
+# STRIDE=(3)
+# BIN_SIZES=(20)
 
 
 itr_subsample=-1
