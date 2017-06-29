@@ -76,7 +76,7 @@ def exec_fengineer(model_name, scenario, microtlist):
 
 	trial.feature_engineering()
 
-def exec_training(model_name, scenario, microtlist, useSample, input_shape, filter_shape, output_size, FC_layers, earlystop, size, bins):
+def exec_training(model_name, scenario, microtlist, useSample, input_shape, filter_shape, output_size, FC_layers, earlystop, size, bins, finetune, dropout, optimizer):
 	from FintechCapstone import FinCapstone
 
 	date_from = '2009-01-01'
@@ -105,7 +105,9 @@ def exec_training(model_name, scenario, microtlist, useSample, input_shape, filt
 		, date_from=date_from
 		, reset_status=False)
 
-	trial.train(train_next=1, nb_epoch=2000, useSample=useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop, timespan=size, bins=bins)
+	trial.train(train_next=1, nb_epoch=2000, useSample=useSample, input_shape=input_shape, filter_shape=filter_shape, 
+				output_size=output_size, FC_layers=FC_layers, earlystop=earlystop, timespan=size, bins=bins, 
+				finetune=finetune, dropout=dropout, optimizer=optimizer)
 
 
 def exec_fencode(model_name, scenario, microtlist, work_page, useSample, size, bins):
@@ -196,6 +198,9 @@ if __name__ == "__main__":
 	ap.add_argument("--FCBlocks", required=False, help="The number of fully connected blocks in the model.")
 	ap.add_argument("--arch", required=False, help="Copies and renames the current status files of the specified model_name into an --arch name. Also copies last weights files.")
 	ap.add_argument("--earlystop", required=False, help="Sets the tolerance for early stopping.")
+	ap.add_argument("--finetune", required=False, help="Filename of weights to preload the model to finetune")
+	ap.add_argument("--dropout", required=False, help="Dropout probabilities to add between the fully connected layers")
+	ap.add_argument("--optimizer", required=False, help="Optimizer to use in finetuning")
 
 
 	args = None
@@ -235,73 +240,30 @@ if __name__ == "__main__":
 		exec_fengineer(args["name"], args["scenario"], args["microtlist"])
 
 	if not(args["fencode"] is None):
-		if args["subsample"] is None:
-			_subsample = 1.0
-		else:
-			_subsample = float(args["subsample"]) / 100.0
-
-		if args["size"] is None :
-			_size = 224
-		else:
-			_size = int(args["size"])
-
-		if args["bins"] is None :
-			_bins = 100
-		else:
-			_bins = int(args["bins"])
+		_subsample = 1.0 if args["subsample"] is None else float(args["subsample"]) / 100.0
+		_size = 224 if args["size"] is None else int(args["size"])
+		_bins = 100 if args["bins"] is None else int(args["bins"])
+		
 
 		exec_fencode(args["name"], args["scenario"], args["microtlist"], int(args["fencode"]), _subsample, _size, _bins)
 
 	if args["train"]:
-		if args["subsample"] is None:
-			_subsample = 1.0
-		else:
-			_subsample = float(args["subsample"]) / 100.0
+		_subsample = 1.0 if args["subsample"] is None else float(args["subsample"]) / 100.0
 
-		if args["size"] is None :
-			_input_shape = (224, 224, 3)
-			_size = 224
-		else:
-			_input_shape = (int(args["size"]), int(args["size"]), 3)
-			_size = int(args["size"])
+		_input_shape = (224, 224, 3) if args["size"] is None else (int(args["size"]), int(args["size"]), 3)
+		_size = 224 if args["size"] is None else int(args["size"])
+		_filtersize = (3, 3) if args["filtersize"] is None else (int(args["filtersize"]), int(args["filtersize"]))
+		_noutputs = 3 if args["noutputs"] is None else int(args["noutputs"])
+		_FCBlocks = 4 if args["FCBlocks"] is None else int(args["FCBlocks"])
+		_earlystop = 5 if args["earlystop"] is None else int(args["earlystop"])
+		_bins = 100 if args["bins"] is None else int(args["bins"])
+		_finetune = None if args["finetune"] is None else args["finetune"]
+		_dropout = 0.0 if args["dropout"] is None else float(args["dropout"])
+		_optimizer = "adam" if args["optimizer"] is None else args["optimizer"]
 
-		if args["filtersize"] is None :
-			_filtersize = (3, 3)
-		else:
-			_filtersize = (int(args["filtersize"]), int(args["filtersize"]))
-
-		if args["noutputs"] is None :
-			_noutputs = 3
-		else:
-			_noutputs = int(args["noutputs"])
-
-		if args["FCBlocks"] is None :
-			_FCBlocks = 4
-		else:
-			_FCBlocks = int(args["FCBlocks"])
-
-		if args["earlystop"] is None :
-			_earlystop = 5
-		else:
-			_earlystop = int(args["earlystop"])
-
-		if args["bins"] is None :
-			_bins = 100
-		else:
-			_bins = int(args["bins"])
-
-
-		exec_training(args["name"]
-						, args["scenario"]
-						, args["microtlist"]
-						, _subsample
-						, _input_shape
-						, _filtersize
-						, _noutputs
-						, _FCBlocks
-						, _earlystop
-						, _size
-						, _bins)
+		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample
+						, _input_shape, _filtersize, _noutputs, _FCBlocks, _earlystop, _size
+						, _bins, _finetune, _dropout, _optimizer)
 
 	if args["arch"]:
 		exec_archive(args["name"], args["scenario"], args["arch"])

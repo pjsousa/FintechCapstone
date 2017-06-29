@@ -38,6 +38,7 @@ from keras.callbacks import ModelCheckpoint
 from keras import backend as K
 from keras.metrics import binary_accuracy
 from keras.wrappers.scikit_learn import KerasRegressor
+from keras.optimizers import SGD, RMSprop, Adam
 
 TINY_FLOAT = 1e-10
 
@@ -258,9 +259,29 @@ def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC
 		model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
 
 	#model.add(Dense(output_size, kernel_initializer='normal'))
-	model.add(Dense(output_size, kernel_initializer='normal'))
+	model.add(Dense(output_size, kernel_initializer='uniform'))
 
 	model.compile(loss='mean_squared_error', optimizer='adam')
+
+	return model
+
+def finetune(model, output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
+
+	## Remove the FC_Layers and the Output Layer
+	for itr in range(FC_layers + 1):
+		model.pop()
+
+	# FC
+	for i in range(FC_layers):
+		model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+		if dropout > 0.0:
+			model.add(Dropout(dropout))
+
+	model.add(Dense(output_size, kernel_initializer='normal'))
+
+	#model.compile(loss='mean_squared_error', optimizer=RMSprop(lr=1e-4))
+	#model.compile(loss='mean_squared_error', optimizer="adagrad")
+	model.compile(loss='mean_squared_error', optimizer=optimizer)
 
 	return model
 

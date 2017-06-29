@@ -307,7 +307,7 @@ class FinCapstone():
 
 
 
-	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100):
+	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
 		## train only one specific ticker
 		work_tickers = None
 		_start = None
@@ -334,19 +334,11 @@ class FinCapstone():
 
 				if self.scenario == "baseline":
 					model = self.train_baseline(itr_ticker, nb_epoch)
-				elif self.scenario == "scenarioa":
-					model = self.train_scenarioa(itr_ticker, nb_epoch)
-				elif self.scenario == "scenariob":
-					
-					if self.trialconfig_df.loc["modeltrainmarket_status","value"] == "INCOMPLETE":
-						model = self.train_scenariob(None, nb_epoch)
-						self.trialconfig_df.loc["modeltrainmarket_status","value"] = "COMPLETE"
-					
-					model = self.train_scenariob(itr_ticker, nb_epoch)
 				elif self.scenario == "scenarioc":
 					
-					model = self.train_scenarioc(nb_epoch, useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, earlystop=earlystop, timespan=timespan, bins=bins)
-
+					model = self.train_scenarioc(nb_epoch, useSample, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size
+											, FC_layers=FC_layers, earlystop=earlystop, timespan=timespan, bins=bins, finetune=finetune
+											, dropout=dropout, optimizer=optimizer)
 				else:
 					model = None
 
@@ -520,7 +512,7 @@ class FinCapstone():
 
 		return _r
 
-	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100):
+	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
 		X_train = None
 		y_train = None
 		X_test = None
@@ -568,6 +560,11 @@ class FinCapstone():
 
 		#model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
 		model = scenarioc.create_model(input_shape, filter_shape, 1, FC_layers)
+
+		if finetune is not None:
+			finetune=None, dropout=0.0, optimizer="adam"
+			model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune))
+			scenarioc.finetune(1, FC_layers, dropout, optimizer)
 
 		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
 
