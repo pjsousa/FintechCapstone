@@ -562,7 +562,6 @@ class FinCapstone():
 		model = scenarioc.create_model(input_shape, filter_shape, 1, FC_layers)
 
 		if finetune is not None:
-			finetune=None, dropout=0.0, optimizer="adam"
 			model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune))
 			scenarioc.finetune(1, FC_layers, dropout, optimizer)
 
