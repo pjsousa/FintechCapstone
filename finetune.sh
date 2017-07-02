@@ -44,12 +44,8 @@ do
 				weightsfilemask="FullScenarioC_ENCODE100_BIN50_STRIDE3_EARLYSTOP30_SAMPLE100_1.0"
 
 				cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --finetune $weightsfilemask --dropout 0.3 --optimizer adam --train"
+				eval $cmd
 
-				echo $cmd
-
-				cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --finetune $weightsfilemask --dropout 0.3 --optimizer adam --train"
-
-				echo $cmd
 			done
 		done
 	done
