@@ -597,7 +597,7 @@ class FinCapstone():
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 			else:
-				if valid_eval["r_squared"] < best_epoch[1]:
+				if valid_eval["r_squared"] > best_epoch[1]:
 					best_epoch = [itr_epoch, valid_eval["r_squared"]]
 
 					print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
