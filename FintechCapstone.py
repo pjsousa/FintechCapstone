@@ -522,7 +522,7 @@ class FinCapstone():
 		batch_size = 32
 		X_batch = None
 		y_batch = None
-		best_loss = None
+		best_epoch = None
 		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 		valid_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 
@@ -591,24 +591,24 @@ class FinCapstone():
 			self.store_status_files()
 
 
-			if best_loss is None:
-				best_loss = [itr_epoch, valid_eval["mse"]]
+			if best_epoch is None:
+				best_epoch = [itr_epoch, valid_eval["r_squared"]]
 				print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
 				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 			else:
-				if valid_eval["mse"] < best_loss[1]:
-					best_loss = [itr_epoch, valid_eval["mse"]]
+				if valid_eval["r_squared"] < best_epoch[1]:
+					best_epoch = [itr_epoch, valid_eval["r_squared"]]
 
 					print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
 					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 
 
-				if (itr_epoch - best_loss[0]) > earlystop:
+				if (itr_epoch - best_epoch[0]) > earlystop:
 					print("Not improving for %s epochs. Stopping." % earlystop)
 					break;
-			print_progress("  Epoch {} - [M, R, A] - [{:.6f},{:.6f},{:.6f}] [{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_loss[0] == 0 else "")))
+			print_progress("  Epoch {} - [M, R, A] - [{:.6f},{:.6f},{:.6f}] [{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_epoch[0] == 0 else "")))
 			print("\n")
 
 		return model
