@@ -563,7 +563,7 @@ class FinCapstone():
 
 		if finetune is not None:
 			model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune))
-			scenarioc.finetune(1, FC_layers, dropout, optimizer)
+			scenarioc.finetune(model, output_size=1, FC_layers=FC_layers, dropout=dropout, optimizer=optimizer)
 
 		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
 
