@@ -1,10 +1,5 @@
 #!/bin/bash
 
-exit 0
-
-"./capstonecli --name $modelname --scenario scenarioc --arch ${modelname}_FULL"
-cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
-
 ### FULL
 # ENCODE_SIZES=(40 60 100 224)
 # SAMPLE=(10 20 30 40 50 60 70 80 90 100)
