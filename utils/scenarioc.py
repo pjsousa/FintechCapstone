@@ -26,6 +26,7 @@ from keras.layers import Dropout
 from keras.layers import Flatten
 from keras.layers import Lambda
 from keras.layers import Input
+from keras import regularizers
 from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.layers.convolutional import UpSampling2D
@@ -39,6 +40,7 @@ from keras import backend as K
 from keras.metrics import binary_accuracy
 from keras.wrappers.scikit_learn import KerasRegressor
 from keras.optimizers import SGD, RMSprop, Adam
+
 
 TINY_FLOAT = 1e-10
 
@@ -87,6 +89,12 @@ def r2_regression(y_true, y_pred):
 
 
 def markov_transition_matrix(serie, n_states, min_val, max_val):
+	"""
+	Creates a for the entire "serie" with an arbitrary number of states.
+	The value range must be specified. Any slice on the serie must be done priorly.
+
+	https://en.wikipedia.org/wiki/Markov_chain
+	"""
 	min_val = serie.min() if min_val is None else min_val
 	max_val = serie.max() if max_val is None else max_val
 
@@ -122,6 +130,11 @@ def markov_transition_matrix(serie, n_states, min_val, max_val):
 
 
 def markov_transition_field(serie, n_states, min_val, max_val):
+	"""
+	Creates a Markov Transition Field (MTF) as proposed in https://arxiv.org/pdf/1506.00327.pdf by WANG Z. and OATES T.
+	The resulting MTF will be of the same size as "serie". Any slicing must be done priorly.
+	"""
+
 	min_val = serie.min() if min_val is None else min_val
 	max_val = serie.max() if max_val is None else max_val
 
@@ -147,6 +160,10 @@ def markov_transition_field(serie, n_states, min_val, max_val):
 
 
 def encode_features(ticker, itr_date, n_states, timespan, modelname):
+	"""
+	Calculate the encoding of each featrue present in the features dataframe for the specified ticker.
+	Slices and encodes from 'timespan' periods behind 'itr_date' until 'itr_date' considreing an arbitrary number of states.
+	"""
 	_result = []
 
 	features_df = load_scenarioc_features(ticker, parseDate=False)
@@ -169,6 +186,10 @@ def encode_features(ticker, itr_date, n_states, timespan, modelname):
 
 
 def calc_features(raw_df, verbose=True):
+	"""
+	Calculates the features dataframe.
+	(Close, RSI with window 60 and Chainkin Moneyflow with window 21)
+	"""
 	result_df = pd.DataFrame()
 
 	result_df["Close"] = raw_df["Close"]
@@ -185,6 +206,10 @@ def calc_features(raw_df, verbose=True):
 
 
 def calc_labels(raw_df, verbose=True):
+	"""
+	Calculates the labels dataframe.
+	(The 1 day, 30 days and 60 days price returns for the stock)
+	"""
 	result_df = pd.DataFrame()
 
 	result_df["RETURN_1"] = ((raw_df["Close"] / raw_df["Close"].shift(1)) - 1)
@@ -204,9 +229,17 @@ def calc_labels(raw_df, verbose=True):
 
 
 def prepare_problemspace(ticker_list, timespan, bins):
-	## Load the labels for every ticker
+	"""
+	Loads 3 structures to memory based
+		- Labels files for all the tickers in "ticker_list"
+		- the tickers names aligned to each encoding file found on disk
+		- the dates aligned to each encoding file found on disk
+
+	(the images themselves are loaded later during the train session on a batch by batch basis. Otherwise we would risk not having enough memory)
+	"""
 	_labels = dict()
 
+	## Loads a dictionary with all the labels for each ticker
 	for itr_ticker in ticker_list:
 		_labels[itr_ticker] = load_scenarioc_labels(itr_ticker, True)
 		_labels[itr_ticker].set_index("Date", inplace=True)
@@ -214,58 +247,78 @@ def prepare_problemspace(ticker_list, timespan, bins):
 	## Look into disk and list all TICKERS and DATES encodings
 	listing = glob.glob('./data/D_TRIALA/*_{}_{}.npy'.format(timespan, bins))
 	rx = "MTFIELD_(.*)_(\d{4}-\d{2}-\d{2})_" + str(timespan) + "_" + str(bins) + ".npy".format(timespan, bins)
+	
+	## if we only find a "MTFIELD_AAPL_2015-02-01_*" file
+	## then _tickers = [AAPL] _dates = [2015-02-01] will always be aligned
 	_tickers = np.array([ re.search(rx, x).group(1) for x in listing ])
 	_dates = np.array([ pd.to_datetime(re.search(rx, x).group(2)) for x in listing ])
 
+	## we later slice _labels acordingly during the training session based on each context present in the batch
 	return _tickers, _dates, _labels
 
 
 def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6):
+	"""
+	Creates a new Keras model instance. 
+	Based off of VGG16 architecture.
+	(Very Deep Convolutional Networks for Large-Scale Image Recognition
+	K. Simonyan, A. Zisserman
+	arXiv:1409.1556)
+	"""
+
 	model = Sequential()
 
 	# Block 1
-	model.add(Conv2D(64, filter_shape, activation='relu', padding='same', name='block1_conv1', input_shape=input_shape))
-	model.add(Conv2D(64, filter_shape, activation='relu', padding='same', name='block1_conv2'))
-	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool'))
+	model.add(Conv2D(64, filter_shape, activation='relu', padding='same', kernel_initializer="uniform", input_shape=input_shape))
+	model.add(Conv2D(64, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
 	# Block 2
-	model.add(Conv2D(128, filter_shape, activation='relu', padding='same', name='block2_conv1'))
-	model.add(Conv2D(128, filter_shape, activation='relu', padding='same', name='block2_conv2'))
-	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool'))
+	model.add(Conv2D(128, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(Conv2D(128, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
 	# Block 3
-	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', name='block3_conv1'))
-	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', name='block3_conv2'))
-	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', name='block3_conv3'))
-	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool'))
+	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(Conv2D(256, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
 	# Block 4
-	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block4_conv1'))
-	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block4_conv2'))
-	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block4_conv3'))
-	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
 	# Block 5
-	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block5_conv1'))
-	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block5_conv2'))
-	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', name='block5_conv3'))
-	model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool'))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(Conv2D(512, filter_shape, activation='relu', padding='same', kernel_initializer="uniform"))
+	model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
 
 	# FC
 	model.add(Flatten())
 
 	for i in range(FC_layers):
-		model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+		model.add(Dense(4096, activation='relu', kernel_initializer="uniform", kernel_regularizer=regularizers.l2(1e-3)))
 
 	#model.add(Dense(output_size, kernel_initializer='normal'))
 	model.add(Dense(output_size, kernel_initializer='uniform'))
 
-	model.compile(loss='mean_squared_error', optimizer='adam')
+	model.compile(loss='mean_squared_error', optimizer="adam")
+	#model.compile(loss='mean_squared_error', optimizer="rmsprop")
+	#model.compile(loss='mean_squared_logarithmic_error', optimizer=RMSprop(1e-3))
 
 	return model
 
 def finetune(model, output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
+	"""
+	Removes the top Fully Connected layers from a VGG model and adds back new ones.
+	The number of Fully Connected layers can be arbitratry.
+	Optionally, the new model can use dropout regularization.
+	The new model is compiled with Adam. But any optimizer in keras can be used.
+	"""
 
 	## Remove the FC_Layers and the Output Layer
 	for itr in range(FC_layers + 1):
@@ -287,12 +340,18 @@ def finetune(model, output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
 
 
 def seq_data(dates, tickers, labels, timespan, bins):
+	"""
+	Returns a generator that iterates through the "dates" context array and loads/pairs the corresponding encoding
+	with the correct return labels occurence. Yelds this pair.
+	"""
 	X = None
 	y = None
 	
+	## Lets iterate the dates array (would be the same to iterate tickers, they are both aligned with each other)
 	for i in range(dates.shape[0]):
 		_iter = (dates[i], tickers[i])
 
+		## Load the enconding and slice the row from the labels dictionary
 		X = load_scenarioc_encodings(_iter[1], datetime.date.strftime(_iter[0], "%Y-%m-%d"), timespan, bins)
 		y = labels[_iter[1]].loc[_iter[0]].values
 		
@@ -305,6 +364,10 @@ def seq_data(dates, tickers, labels, timespan, bins):
 
 
 def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
+	"""
+	Allows the seq_data generator to be consumed on batch mode.
+	Yelds itself a generator.
+	"""
 	seq = seq_data(dates, tickers, labels, timespan, bins)
 	X = []
 	y = []
@@ -323,6 +386,9 @@ def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
 		yield X, y
 
 def features_stats(dates, tickers, labels, timespan, bins):
+	"""
+	Will load all the context passed in in order to get the mean and standard deviation of the whole feature space.
+	"""
 	_r = []
 	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
 
@@ -337,23 +403,28 @@ def features_stats(dates, tickers, labels, timespan, bins):
 
 	return _r[:,0].mean(), np.sqrt(np.mean(_r[:,1]))
 
+import matplotlib.pyplot as plt
 
 def train(model, dates, tickers, labels, timespan, bins, features_mean, features_std):
+	"""
+	Runs 1 epoch of fitting the train dataset to the model.
+	Consumes an instance of the seq_batch generator in order to fit the data batch by batch.
+	"""
 	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
 	try:
 		while True:
+			## Get next batch of [Images, Returns]
 			X_batch, y_batch = next(data_iterator)
 			X_batch = np.array(X_batch)
 
 			y_batch = np.where(~np.isnan(y_batch), y_batch, 0.0)
 			y_batch = np.where(~np.isinf(y_batch), y_batch, 0.0)
 
-			y_batch = y_batch[ : , :3]
-
 			## Normalize Features
 			X_batch = (X_batch - features_mean) / features_std
 
-			model.fit(X_batch, y_batch[:,1], epochs=1, batch_size=32, verbose=0)
+			## Fit
+			model.fit(X_batch, y_batch, epochs=1, batch_size=32, verbose=0)
 
 	except StopIteration:
 		v = None
@@ -361,6 +432,13 @@ def train(model, dates, tickers, labels, timespan, bins, features_mean, features
 	return model
 
 def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, features_std):
+	"""
+	Evaluates our model in terms of Loss, R^2 and accuracy.
+	The Accuracy is based on a discretization of the labels in GAIN/LOSS [1/0] done on the fly in thist method just just evaluation purposes.
+
+	Returns a dictionary with the metrics for the dataset.
+	"""
+
 	_r = dict()
 	y_true = []
 	y_pred = []
@@ -375,13 +453,11 @@ def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, featu
 			y_batch = np.where(~np.isnan(y_batch), y_batch, 0.0)
 			y_batch = np.where(~np.isinf(y_batch), y_batch, 0.0)
 
-			y_batch = y_batch[ : , :3]
-
 			## Normalize Features
 			X_batch = (X_batch - features_mean) / features_std
 
 			y_pred.append(model.predict(X_batch, verbose=0))
-			y_true.append(y_batch[:,1])
+			y_true.append(y_batch)
 
 	except StopIteration:
 		v = None

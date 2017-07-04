@@ -14,11 +14,11 @@
 
 
 ### BINS 50, CHANGE ENCODE (224 already done)
-ENCODE_SIZES=(100)
-#SAMPLE=(10 20 30 40 50 60 70 80 90 100)
-SAMPLE=(10)
+ENCODE_SIZES=(224)
+SAMPLE=(20)
+#SAMPLE=(10)
 STRIDE=(3)
-BIN_SIZES=(50)
+BIN_SIZES=(100)
 DROPOUT=(0.2 0.3 0.5)
 
 
@@ -41,9 +41,9 @@ do
 				itr_earlystop=30
 
 				modelname="FullScenarioC_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
-				weightsfilemask="FullScenarioC_ENCODE100_BIN50_STRIDE3_EARLYSTOP30_SAMPLE100_1.0"
+				weightsfilemask="FullScenarioC_ENCODE224_BIN100_STRIDE3_EARLYSTOP30_SAMPLE20_0.2"
 
-				cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --finetune $weightsfilemask --dropout 0.3 --optimizer adam --train"
+				cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop 30 --finetune $weightsfilemask --dropout 0.0 --optimizer adam --train"
 				eval $cmd
 
 			done

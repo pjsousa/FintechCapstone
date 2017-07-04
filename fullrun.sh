@@ -118,11 +118,26 @@
 # BIN_SIZES=(50)
 
 ### BIN SIZE 20
-ENCODE_SIZES=(40 60 100)
-SAMPLE=(10 20 30 40 50 60 70 80 90 100)
-STRIDE=(3)
-BIN_SIZES=(20)
+#ENCODE_SIZES=(40 60 100)
+#SAMPLE=(10 20 30 40 50 60 70 80 90 100)
+#STRIDE=(3)
+#BIN_SIZES=(20)
 
+ENCODE_SIZES=(40 60 100 224)
+SAMPLE=(20)
+STRIDE=(3 5 7)
+BIN_SIZES=(20 50 100)
+TRIALS=(1 2 3 4 5)
+
+# ENCODE_SIZES=(40 60 100)
+# SAMPLE=(50)
+# STRIDE=(3)
+# BIN_SIZES=(XXXXXXXXX)
+
+# ENCODE_SIZES=(40 60 100)
+# SAMPLE=(50)
+# STRIDE=(XXXXXXX)
+# BIN_SIZES=(3333333)
 
 itr_subsample=-1
 itr_size=-1
@@ -140,16 +155,19 @@ do
 		do
 			for itr_bin in "${BIN_SIZES[@]}"
 			do
-				itr_earlystop=30
+				for itr_trial in "${TRIALS[@]}"
+				do
+					itr_earlystop=30
 
-				modelname="FullScenarioC_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
+					modelname="FullScenarioC_TRIAL${itr_trial}_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
 
-				cmd="./capstonecli --name $modelname --scenario scenarioc --fetch"
-				eval $cmd
-				cmd="./capstonecli --name $modelname --scenario scenarioc --fengineer"
-				eval $cmd
-				cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
-				eval $cmd
+					cmd="./capstonecli --name $modelname --scenario scenarioc --fetch"
+					eval $cmd
+					cmd="./capstonecli --name $modelname --scenario scenarioc --fengineer"
+					eval $cmd
+					cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
+					eval $cmd
+				done
 			done
 		done
 	done

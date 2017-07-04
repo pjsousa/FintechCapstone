@@ -158,7 +158,12 @@ class FinCapstone():
 
 
 	def feature_engineering(self, scenario=None):
+		"""
+		Based off of the raw data, performs the feature and label calculations for the specified scenario.
+		Tracks time and status of the process for each ticker.
+		"""
 		scenario = self.scenario if scenario is None else scenario
+		
 		## Only work with tickers that were successfull during datafetch
 		ticker_list = self.provision_validtickerlist()
 		ticker_count = len(ticker_list)
@@ -174,13 +179,13 @@ class FinCapstone():
 				_start = datetime.datetime.now()
 				itr_ticker = ix
 				
-				
+				## Load raw data and slice for the dates we want for our problem
 				itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=False)
-
 				
 				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) >= dtparser.parse(self.date_from)]
 				itr_df = itr_df[pd.to_datetime(itr_df["Date"]) < dtparser.parse(self.date_to)]
 
+				## Calculate depending on scenario and store
 				if scenario == "baseline":
 					print_progress("  ({}/{}) - Calculating Features {}".format(itr_count, ticker_count, itr_ticker))
 					work_df = baseline_model.calc_features(itr_df,verbose=True)
@@ -221,14 +226,21 @@ class FinCapstone():
 
 
 	def feature_encoding(self, scenario=None, work_page=None, useSample=None, timespan=224, bins=100):
+		"""
+		Runs the encoding process used for scenarioc.
+		The resulting encoded images will have the dimensions [timespan x timespan x number of features] and 
+		will be discretized to an arbitrary 'bins' size.
+		We can run the encoding only on a subsample of the problem space.
+		The whole problem space is paginated so we can also choose the page to run (so we can run all the pages in pararel)
+		"""
 		scenario = self.scenario if scenario is None else scenario
 		_skip = False
 		_skip_count = 0
 		_done_count = 0
 		_err_count = 0
-		
-		number_pages = self.encode_workpages
 
+		## Settle the whole working problem space
+		number_pages = self.encode_workpages
 		_status_df = self.encode_status_df
 		
 		tickers = self.valid_ticker_list()
@@ -237,7 +249,7 @@ class FinCapstone():
 		_todo = [tickers, dates, [bins], [timespan], [self.model_name]]
 		_todo = [x for x in itertools.product(*_todo)]
 
-		# if work_page is defined, slice by the given page
+		# ## Settle page to run. if work_page is defined, slice by the given page
 		if not(work_page is None):
 			page_size = int(np.ceil(len(_todo) / number_pages))
 			_todo = _todo[page_size*work_page:page_size*(work_page + 1)]
@@ -252,16 +264,19 @@ class FinCapstone():
 			_start = datetime.datetime.now()
 
 			try:
+				## skips the iteration if the random is above our subsampling change
 				if (useSample is not None) and (np.random.rand() > useSample):
 					#print("Skip. {} {}".format(itr[0], itr[1]))
 					_skip_count += 1
 					continue
 
+				## skips if we already created the image some other run
 				if scenarioc.check_encoding_exists(itr[0], itr[1], itr[3], itr[2]):
 					#print("File Exists. {} {}".format(itr[0], itr[1]))
 					_skip_count += 1
 					continue
 
+				## call encode
 				mtf = scenarioc.encode_features(*itr)
 
 				self.store_scenarioc_encodings(mtf, itr[0], itr[1], itr[3], itr[2])
@@ -290,6 +305,9 @@ class FinCapstone():
 
 
 	def split_tickerlist(self, n_splits=4):
+		"""
+		Deprecate?
+		"""
 		ticker_list = self.fetchstatus_df.index.tolist()
 		_size = 1.0 / n_splits
 		itr_ticker_list = None
@@ -308,7 +326,11 @@ class FinCapstone():
 
 
 	def train(self, nb_epoch=1, train_next=None, ticker=None, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
-		## train only one specific ticker
+		"""
+		Train session wrapper.
+		Starts the training session for the specified scenario.
+		"""
+
 		work_tickers = None
 		_start = None
 		iserror = False
@@ -316,6 +338,7 @@ class FinCapstone():
 
 		print("\n{} - Train Session - {} - {} epochs - Ticker {}".format(datetime.datetime.now(), self.scenario, nb_epoch, ticker))
 
+		## The train is done Ticker by Ticker in the case of the baseline scenario. We are creating multiple models in that scenario.
 		if not(ticker is None):
 			work_tickers = [ticker]
 			train_next = 1
@@ -329,6 +352,7 @@ class FinCapstone():
 		for idx_ticker in range(train_next):
 			itr_ticker = work_tickers[idx_ticker]
 
+			## The specifif training session
 			try:
 				_start = datetime.datetime.now()
 
@@ -341,7 +365,6 @@ class FinCapstone():
 											, dropout=dropout, optimizer=optimizer)
 				else:
 					model = None
-
 
 				self.train_status_df.loc[itr_ticker, "status"] = "OK"
 				self.train_status_df.loc[itr_ticker, "epochs"] = nb_epoch + self.train_status_df.loc[itr_ticker, "epochs"]
@@ -358,6 +381,7 @@ class FinCapstone():
 				self.train_status_df.loc[itr_ticker, "msg"] = str(e)
 				self.store_status_files()
 				iserror = True
+				print(str(e))
 
 		work_tickers = self.train_status_df[self.train_status_df["status"] == "INCOMPLETE"].index.tolist()
 
@@ -368,6 +392,9 @@ class FinCapstone():
 
 
 	def evaluate(self, train_next=None, ticker=None):
+		"""
+		Evaluates a model for the specified ticker
+		"""
 		work_tickers = None
 		_start = None
 		iserror = False
@@ -441,6 +468,9 @@ class FinCapstone():
 
 
 	def train_baseline(self, ticker, nb_epoch=100):
+		"""
+		Runs a training session for the baseline model
+		"""
 		results = None
 		X_train = None
 		y_train = None
@@ -526,13 +556,11 @@ class FinCapstone():
 		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 		valid_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 
-
 		print("Training Scenario C")
 		print("train_from={}, train_until={}, test_from={}, test_until={}".format(datetime.datetime.strftime(self.train_from, "%Y-%m-%d"), datetime.datetime.strftime(self.train_until, "%Y-%m-%d"), datetime.datetime.strftime(self.test_from, "%Y-%m-%d"), datetime.datetime.strftime(self.test_until, "%Y-%m-%d")))
 		print("input_shape={}, bins={}, filter_shape={}, output_size={}, FC_layers={}".format(input_shape, bins, filter_shape, output_size, FC_layers))
 		print("sample={}, earlystop={}".format(useSample, earlystop))
 		print("\n")
-
 
 		## load all label data and feature contexts for batch loading
 		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), timespan, bins)
@@ -543,27 +571,28 @@ class FinCapstone():
 		else:
 			useSample = 1.0
 
+		## Lets slice out the "TEST"
 		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
-		_mask_valid = (_dates >= pd.to_datetime(self.test_from))
+		#_mask_test = (_dates >= pd.to_datetime(self.test_from))
+		_tickers = _tickers[_mask_train]
+		_dates = _dates[_mask_train]
 
-		_tickers_train = _tickers[_mask_train]
-		_dates_train = _dates[_mask_train]
+		## And Split train into train and validation with an 80% 20% split
+		_mask_trainvalid = np.arange(_tickers.shape[0])
+		np.random.shuffle(_mask_trainvalid)
+		_tickers_train = _tickers[_mask_trainvalid[int(np.ceil(_mask_trainvalid.shape[0] * 0.2)):]]
+		_dates_train = _dates[_mask_trainvalid[int(np.ceil(_mask_trainvalid.shape[0] * 0.2)):]]
+		_tickers_valid = _tickers[_mask_trainvalid[:int(np.ceil(_mask_trainvalid.shape[0] * 0.2))]]
+		_dates_valid = _dates[_mask_trainvalid[:int(np.ceil(_mask_trainvalid.shape[0] * 0.2))]]
+
+		print("Shapes: [TICKER {}T {}V] [DATES {}T {}V]".format(_tickers_train.shape[0], _tickers_valid.shape[0], _dates_train.shape[0], _dates_valid.shape[0]))
 		
-		_tickers_valid = _tickers[_mask_valid]
-		_dates_valid = _dates[_mask_valid]
 
-		# we'll only look at some of our test data for validation. A subsample of 20% the size of our test data
-		_arr = np.arange(_tickers_valid.shape[0])
-		np.random.shuffle(_arr)
-		_tickers_valid[_arr[:int(np.ceil(_tickers_train.shape[0] * 0.2))]]
-		_dates_valid[_arr[:int(np.ceil(_tickers_train.shape[0] * 0.2))]]
-
-		#model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
-		model = scenarioc.create_model(input_shape, filter_shape, 1, FC_layers)
+		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
 
 		if finetune is not None:
 			model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune))
-			scenarioc.finetune(model, output_size=1, FC_layers=FC_layers, dropout=dropout, optimizer=optimizer)
+			scenarioc.finetune(model, output_size=output_size, FC_layers=FC_layers, dropout=dropout, optimizer=optimizer)
 
 		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
 
@@ -575,7 +604,7 @@ class FinCapstone():
 
 			print_progress("  Epoch {} - EVAL. TRAIN ".format(itr_epoch))
 			train_eval = scenarioc.evaluate(model, _dates_train, _tickers_train, _labels, timespan, bins, feature_mean, feature_std)
-			print_progress("  Epoch {} - EVAL. TEST ".format(itr_epoch))
+			print_progress("  Epoch {} - EVAL. VALID ".format(itr_epoch))
 			valid_eval = scenarioc.evaluate(model, _dates_valid, _tickers_valid, _labels, timespan, bins, feature_mean, feature_std)
 
 			self.eval_status_df.loc[("Nan", itr_epoch), "status"] = "COMPLETE"
@@ -613,25 +642,25 @@ class FinCapstone():
 
 		return model
 
-	def evaluate_scenarioc(self, model, data):
-		_r = [None] * 2
-		X_train = None
-		y_train = None
-		X_test = None
-		y_test = None
+	# def evaluate_scenarioc(self, model, data):
+	# 	_r = [None] * 2
+	# 	X_train = None
+	# 	y_train = None
+	# 	X_test = None
+	# 	y_test = None
 
-		X_train = data[0]
-		y_train = data[1]
-		X_test = data[2]
-		y_test = data[3]
+	# 	X_train = data[0]
+	# 	y_train = data[1]
+	# 	X_test = data[2]
+	# 	y_test = data[3]
 
-		print("Evaluating {}".format(self.model_name))
+	# 	print("Evaluating {}".format(self.model_name))
 		
-		_r[0] = scenarioc.evaluate(model, X_train, y_train, return_type="dict")
+	# 	_r[0] = scenarioc.evaluate(model, X_train, y_train, return_type="dict")
 
-		_r[1] = scenarioc.evaluate(model, X_test, y_test, return_type="dict")
+	# 	_r[1] = scenarioc.evaluate(model, X_test, y_test, return_type="dict")
 
-		return _r
+	# 	return _r
 
 	##################
 	## Status Files ##
