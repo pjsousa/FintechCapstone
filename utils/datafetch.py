@@ -35,18 +35,6 @@ def print_progress(str_output):
 
 def fetch_quotes(ticker, from_date=datetime.datetime(2005, 1, 1), to_date=datetime.datetime.now(), source="google"):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -66,18 +54,6 @@ def download_companieslist(exchange):
 
 def load_exchangesinfos(config_path=CONFIG_PATH, verbose=False, exchange=_EXCHANGES):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -118,18 +94,6 @@ def load_exchangesinfos(config_path=CONFIG_PATH, verbose=False, exchange=_EXCHAN
 
 def duplicate_tickers(df, ign_exchange=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -144,18 +108,6 @@ def duplicate_tickers(df, ign_exchange=False):
 
 def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	itr_df = None
@@ -197,18 +149,6 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 
 def load_raw_frame(ticker, tryfetch=True, parseDate=True, dropAdjClose=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -238,18 +178,6 @@ def load_raw_frame(ticker, tryfetch=True, parseDate=True, dropAdjClose=False):
 
 def store_tier1_frame(tier1_df, ticker):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -264,18 +192,6 @@ def store_tier1_frame(tier1_df, ticker):
 
 def load_tier1_frame(ticker):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -290,18 +206,6 @@ def load_tier1_frame(ticker):
 
 def store_tier2_frame(tier1_df, ticker):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -316,18 +220,6 @@ def store_tier2_frame(tier1_df, ticker):
 
 def load_tier2_frame(ticker, parseDate=True):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -343,18 +235,6 @@ def load_tier2_frame(ticker, parseDate=True):
 
 def store_baseline_frame(tier1_df, ticker, baselinepath=BASELINE_DATA_PATH):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None
@@ -369,18 +249,6 @@ def store_baseline_frame(tier1_df, ticker, baselinepath=BASELINE_DATA_PATH):
 
 def load_baseline_frame(ticker, baselinepath=BASELINE_DATA_PATH, parseDate=True):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
-			
 	"""
 
 	_r = None

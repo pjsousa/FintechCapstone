@@ -67,17 +67,6 @@ def roll_columns(orig_df, stat_fun_name, column_slice=None, window=None, merge_r
 
 def timewindow_diff(orig_df, column_slice=None, shift_window=1, fillna=False, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 	if column_slice is None:
@@ -98,17 +87,6 @@ def timewindow_diff(orig_df, column_slice=None, shift_window=1, fillna=False, me
 
 def timewindow_return(orig_df, column_slice=None, shift_window=1, fillna=False, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -130,17 +108,6 @@ def timewindow_return(orig_df, column_slice=None, shift_window=1, fillna=False, 
 
 def timewindow_cumdiff(orig_df, column_slice=None, fillna=False, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -162,17 +129,6 @@ def timewindow_cumdiff(orig_df, column_slice=None, fillna=False, merge_result=Fa
 
 def timewindow_cumreturn(orig_df, column_slice=None, fillna=False, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 	
@@ -256,17 +212,6 @@ def timewindow_alphabeta(stock_df, market_df, column_slice, period, min_periods=
 
 def calc_diff_moves(raw_df, timespan, column_slice, merge_result=True, fillna=True):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -289,17 +234,6 @@ def calc_diff_moves(raw_df, timespan, column_slice, merge_result=True, fillna=Tr
 
 def calc_return(raw_df, timespan, column_slice, merge_result=True):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -320,17 +254,6 @@ def calc_return(raw_df, timespan, column_slice, merge_result=True):
 
 def calc_sma(raw_df, timespan, column_slice, merge_result=True):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -351,17 +274,6 @@ def calc_sma(raw_df, timespan, column_slice, merge_result=True):
 
 def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -395,17 +307,6 @@ def calc_bollinger(raw_df, timespan, column_slice, merge_result=True, scaler=2):
 
 def calc_aftermarket_diff(raw_df, fillna=True, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -427,17 +328,6 @@ def calc_aftermarket_diff(raw_df, fillna=True, merge_result=False):
 
 def calc_aftermarket_return(raw_df, fillna=True, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -459,17 +349,6 @@ def calc_aftermarket_return(raw_df, fillna=True, merge_result=False):
 
 def calc_aftermarket_sma(raw_df, timespan, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 
@@ -492,17 +371,6 @@ def calc_aftermarket_sma(raw_df, timespan, merge_result=False):
 
 def calc_aftermarket_bollinger(raw_df, timespan, merge_result=False):
 	"""
-		Description:
-			<Description>
-			
-			E.g. : Useful to <...>
-		
-		Parameters:
-			[...]
-
-		Returns : (type)
-		
-		Examples:
 			
 	"""
 

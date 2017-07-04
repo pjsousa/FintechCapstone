@@ -31,6 +31,8 @@ from utils import vectorized_funs
 
 
 def calc_features(raw_df, verbose=True):
+	"""
+	"""
 	result_df = None
 
 	# if verbose:
@@ -52,6 +54,8 @@ def calc_features(raw_df, verbose=True):
 
 
 def calc_labels(raw_df, timespan, verbose=True):
+	"""
+	"""
 	result_df = None
 
 	# if verbose:
@@ -70,6 +74,8 @@ def calc_labels(raw_df, timespan, verbose=True):
 	return result_df
 
 def prepare_problemspace(features_df, labels_df, train_from, train_until, test_from, return_type="numpy"):
+	"""
+	"""
 	X_train = None
 	y_train = None
 	X_test = None
@@ -98,6 +104,9 @@ def prepare_problemspace(features_df, labels_df, train_from, train_until, test_f
 	return X_train, y_train, X_test, y_test
 
 def create_model():
+	"""
+	"""
+
 	# create model
 	model = Sequential()
 	model.add(Dense(4, input_dim=4, kernel_initializer='normal', activation='relu'))
@@ -116,12 +125,16 @@ def create_model():
 	return model
 
 def fit(model, X_train, y_train, nb_epoch=1):
+	"""
+	"""
 
 	model.fit(X_train, y_train, epochs=nb_epoch, batch_size=128, verbose=1)
 
 	return model
 
 def evaluate(model, X_test, y_test, return_type="dict"):
+	"""
+	"""
 	_r = dict()
 
 	y_pred = model.predict(X_test, verbose=0)
