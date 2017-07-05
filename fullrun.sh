@@ -144,6 +144,7 @@ itr_size=-1
 itr_stride=-1
 itr_earlystop=-1
 itr_bin=-1
+itr_trial=-1
 modelname=""
 
 # TEST DIFERENT ENCODING SIZES

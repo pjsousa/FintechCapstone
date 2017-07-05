@@ -474,6 +474,28 @@ def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, featu
 
 	return _r
 
+def predict(ticker):
+	features_df = scenarioc.load_scenarioc_features(ticker, True)
+	labels_df = scenarioc.load_scenarioc_labels(ticker, True)
+
+	predictions_df = pd.DataFrame()
+	predictions_df["Date"] = labels_df["Date"].copy()
+	predictions_df = pd.concat([predictions_df, np.multiply(labels_df.iloc[:,1:], np.random.rand(2133,3))], axis=1)
+
+	futureprices_df = pd.DataFrame(
+				data=predictions_df.iloc[:,1:].apply(lambda x : x * features_df["Close"]).values,
+				columns=["CLOSE_1", "CLOSE_30", "CLOSE_60"])
+
+	predictions_df = pd.concat([predictions_df, futureprices_df], axis=1)
+	dates_missing = pd.DataFrame(pd.date_range(predictions_df["Date"].max(), periods=60, freq='B').values, columns=["Date"])
+	predictions_df = pd.concat([predictions_df, dates_missing], axis=0)
+
+	predictions_df["CLOSE_1"] = predictions_df["CLOSE_1"].shift(1)
+	predictions_df["CLOSE_30"] = predictions_df["CLOSE_30"].shift(30)
+	predictions_df["CLOSE_60"] = predictions_df["CLOSE_60"].shift(60)
+	
+	return predictions_df
+
 
 def store_scenarioc_features(features_df, ticker):
 	features_df.to_csv("{}/{}_scenarioc_X.csv".format(paths.TRIALA_DATA_PATH, ticker))
