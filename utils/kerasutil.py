@@ -18,6 +18,8 @@ from sklearn.metrics import accuracy_score
 
 
 def ConvBlock(layers, filters, model, add_maxpooling=True):
+	"""
+	"""
 	for i in range(layers):
 		model.add(ZeroPadding2D((1, 1)))
 		model.add(Conv2D(filters, (3, 3), activation='relu'))
@@ -27,6 +29,8 @@ def ConvBlock(layers, filters, model, add_maxpooling=True):
 
 
 def FCBlock(model, block_size=4096,add_batchnorm=False, add_dropout=False):
+	"""
+	"""
 	if add_batchnorm:
 		model.add(BatchNormalization())
 
@@ -37,6 +41,8 @@ def FCBlock(model, block_size=4096,add_batchnorm=False, add_dropout=False):
 
 
 def create_vgg16_model():
+	"""
+	"""
 	model = VGG16(weights=None, include_top=False)
 
 	top_model = Sequential()
