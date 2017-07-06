@@ -58,14 +58,14 @@ def calc_features(raw_df, verbose=True, normalize=False):
 	# if verbose:
 	# 	self.print_verbose("SMAs")
 
-	result_df["BOLL_5_UP"] = result_df["SMA_5"] + (2 * raw_df["Close"].rolling(window=5).std())
-	result_df["BOLL_5_DOWN"] = result_df["SMA_5"] - (2 * raw_df["Close"].rolling(window=5).std())
-	result_df["BOLL_30_UP"] = result_df["SMA_30"] + (2 * raw_df["Close"].rolling(window=30).std())
-	result_df["BOLL_30_DOWN"] = result_df["SMA_30"] - (2 * raw_df["Close"].rolling(window=30).std())
-	result_df["BOLL_60_UP"] = result_df["SMA_60"] + (2 * raw_df["Close"].rolling(window=60).std())
-	result_df["BOLL_60_DOWN"] = result_df["SMA_60"] - (2 * raw_df["Close"].rolling(window=60).std())
-	result_df["BOLL_200_UP"] = result_df["SMA_200"] + (2 * raw_df["Close"].rolling(window=200).std())
-	result_df["BOLL_200_DOWN"] = result_df["SMA_200"] - (2 * raw_df["Close"].rolling(window=200).std())
+	result_df["BOLL_5_UP"] = result_df["SMA_5"] + (2 * raw_df["Close"].rolling(window=5).std(ddof=1))
+	result_df["BOLL_5_DOWN"] = result_df["SMA_5"] - (2 * raw_df["Close"].rolling(window=5).std(ddof=1))
+	result_df["BOLL_30_UP"] = result_df["SMA_30"] + (2 * raw_df["Close"].rolling(window=30).std(ddof=1))
+	result_df["BOLL_30_DOWN"] = result_df["SMA_30"] - (2 * raw_df["Close"].rolling(window=30).std(ddof=1))
+	result_df["BOLL_60_UP"] = result_df["SMA_60"] + (2 * raw_df["Close"].rolling(window=60).std(ddof=1))
+	result_df["BOLL_60_DOWN"] = result_df["SMA_60"] - (2 * raw_df["Close"].rolling(window=60).std(ddof=1))
+	result_df["BOLL_200_UP"] = result_df["SMA_200"] + (2 * raw_df["Close"].rolling(window=200).std(ddof=1))
+	result_df["BOLL_200_DOWN"] = result_df["SMA_200"] - (2 * raw_df["Close"].rolling(window=200).std(ddof=1))
 
 	# if verbose:
 	# 	self.print_verbose("BOLLINGER")
