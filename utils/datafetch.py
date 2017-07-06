@@ -106,7 +106,7 @@ def duplicate_tickers(df, ign_exchange=False):
 	return _r
 
 
-def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
+def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None, force=False):
 	"""
 	"""
 
@@ -121,7 +121,7 @@ def initial_dataload(ticker_list, verbose=True, del_temp=False, status_df=None):
 
 	for idx, itr_tkr in enumerate(ticker_list):
 		_start = datetime.datetime.now()
-		if not(os.path.isfile(filepath.format(DATA_PATH, itr_tkr))):
+		if not(os.path.isfile(filepath.format(DATA_PATH, itr_tkr))) or force:
 			itr_df = fetch_quotes(itr_tkr)
 			if itr_df is None:
 				itr_err = True

@@ -27,7 +27,6 @@ import sys
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-
 TINY_FLOAT = 1e-10
 
 class FinCapstone():
@@ -142,7 +141,7 @@ class FinCapstone():
 		ticker_list = self.fetchstatus_df[self.fetchstatus_df["status"] == "OK"]
 		ticker_list = ticker_list[~(self.featureengineer_status_df["status"] == "NOK")]
 
-		return ticker_list
+		return ticker_list.index.tolist()
 
 
 
@@ -159,7 +158,7 @@ class FinCapstone():
 
 
 
-	def feature_engineering(self, scenario=None):
+	def feature_engineering(self, scenario=None, ticker_list=None):
 		"""
 		Based off of the raw data, performs the feature and label calculations for the specified scenario.
 		Tracks time and status of the process for each ticker.
@@ -167,7 +166,7 @@ class FinCapstone():
 		scenario = self.scenario if scenario is None else scenario
 		
 		## Only work with tickers that were successfull during datafetch
-		ticker_list = self.provision_validtickerlist()
+		ticker_list = self.provision_validtickerlist() if ticker_list is None else ticker_list
 		ticker_count = len(ticker_list)
 		itr_count = 0
 		work_df = None
@@ -175,12 +174,11 @@ class FinCapstone():
 
 		print("\n{} - Feature/Label Engineering - {} - [{} ; {}] ".format(datetime.datetime.now(), scenario, self.date_from, self.date_to))
 
-		for ix, row in ticker_list.iterrows():
+		for itr_ticker in ticker_list:
 			itr_count += 1
 			try:
 				_start = datetime.datetime.now()
-				itr_ticker = ix
-				
+
 				## Load raw data and slice for the dates we want for our problem
 				itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=False)
 				
@@ -393,7 +391,7 @@ class FinCapstone():
 		self.store_status_files()
 
 
-	def evaluate(self, train_next=None, ticker=None):
+	def evaluate(self, train_next=None, ticker=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, finetune_path=None, dropout=0.0, optimizer="adam"):
 		"""
 		Loads and evaluates a model against our test data.
 		"""
@@ -417,15 +415,10 @@ class FinCapstone():
 		if self.scenario == "baseline":
 			print("EVAL BA model for %s tickers" % n_tickers)
 			model = baseline_model.create_model()
-		elif self.scenario == "scenarioa":
+		elif self.scenario == "scenarioc":
 			n_tickers = len(self.valid_ticker_list())
 			print("EVAL SA model for %s tickers" % n_tickers)
-			model = scenarioa.create_model(n_tickers)
-		elif self.scenario == "scenariob":
-			n_tickers = len(self.valid_ticker_list())
-			print("EVAL SA model for %s tickers" % n_tickers)
-			model = scenariob.create_model(n_tickers)
-
+			model = scenariob.create_model(input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, timespan=timespan, bins=bins, finetune_path=finetune_path, dropout=dropout, optimizer=optimizer)
 
 		for idx_ticker in range(train_next):
 			itr_ticker = work_tickers[idx_ticker]
@@ -464,7 +457,7 @@ class FinCapstone():
 
 
 	def valid_ticker_list(self):
-		_r = self.provision_validtickerlist().index.tolist()
+		_r = self.provision_validtickerlist()
 
 		return _r
 
@@ -514,7 +507,6 @@ class FinCapstone():
 			self.store_status_files()
 
 		return model
-
 
 	def evaluate_baseline(self, ticker, model=None, data=None):
 		_r = [None] * 2
@@ -636,7 +628,7 @@ class FinCapstone():
 
 		return model
 
-	def evaluate_scenarioc(self, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, finetune_path=None, dropout=0.0, optimizer="adam"):
+	def evaluate_scenarioc(self,finetune_path, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
 		model = None
 		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 		test_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
@@ -695,6 +687,107 @@ class FinCapstone():
 		print("\n")
 
 		return model
+
+	def predict_scenarioc(self,finetune_path, tickers, dates, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
+		print_progress("Finding distinct tickers")
+		time.sleep(1)
+		print_progress("Force-Fetching necessary tickers")
+		time.sleep(1)
+		print_progress("Running Feature Engineering")
+		time.sleep(1)
+		print_progress("Encoding missing images")
+		time.sleep(1)
+		print_progress("Running Predict")
+		time.sleep(1)
+
+
+		_tickers_predict = ["NVDA","NFLX", "NVDA"]
+		_dates_predict = ["2017-03-03", "2017-03-03", "2017-03-06"]
+
+		input_shape=(224,224,3)
+		filter_shape=(3, 3)
+		output_size=3
+		FC_layers=4
+		timespan=224
+		bins=100
+		finetune_path=None
+		dropout=0.0
+		optimizer="adam"
+
+
+		_contexts = [tuple(x) for x in zip(_tickers_predict, pd.to_datetime(_dates_predict))]
+		_distinct_tickers = np.unique(_tickers_predict)
+		_distinct_tickers.tolist()
+		_distinct_dates = pd.to_datetime(np.unique(_dates_predict))
+		_distinct_dates.tolist()
+
+		print_progress("Force-Fetching necessary tickers\n")
+		initial_dataload(_distinct_tickers, force=True)
+
+		print_progress("Running Feature Engineering")
+		trial.feature_engineering(ticker_list=_distinct_tickers.tolist())
+
+
+		_skip_count = 0
+		_done_count = 0
+		_err_count = 0
+
+		for itr_ticker, itr_date in zip(_tickers_predict, _dates_predict):
+			print_progress("Encoding missing images")
+			## skips if we already created the image some other run
+			if scenarioc.check_encoding_exists(itr_ticker, itr_date, timespan, bins):
+				#print("File Exists. {} {}".format(itr[0], itr[1]))
+				_skip_count += 1
+				continue
+
+				## call encode
+				mtf = scenarioc.encode_features(itr_ticker, itr_date, bins, timespan, trial.model_name)
+
+				scenarioc.store_scenarioc_encodings(mtf, itr_ticker, itr_date, timespan, bins)
+				_done_count += 1
+				print_progress("  Last encoding {} {} [{} Done] [{} Skipped] [{} Weekend/Holiday]".format(itr_ticker, itr_date, _done_count, _skip_count, _err_count))
+
+
+		## load all label data and feature contexts for batch loading
+		_tickers, _dates, _labels = scenarioc.prepare_problemspace(_distinct_tickers, timespan, bins)
+
+
+		_tickers
+
+		_dates
+
+
+		_mask_predict = pd.DataFrame([x for x in zip(_tickers, _dates)])
+		_mask_predict = _mask_predict.apply(lambda x: tuple(x) in _contexts, axis=1).values
+		_mask_predict
+
+
+		## We'll still want the train data. We'll use it to find the mean and std. deviation of the data.
+		_mask_train = (_dates > pd.to_datetime(trial.train_from)) & (_dates < pd.to_datetime(trial.train_until))
+		_mask_predict = _mask_predict
+
+		_tickers_train = _tickers[_mask_train]
+		_dates_train = _dates[_mask_train]
+		_tickers_predict = _tickers[_mask_predict]
+		_dates_predict = _dates[_mask_predict]
+		print("Shapes: [TICKER {}] [DATES {}] [TICKER {}] [DATES {}]".format(_tickers_train.shape[0], _dates_train.shape[0], _tickers_predict.shape[0], _dates_predict.shape[0]))
+
+
+		print_progress("\n Creating model and loading weights")
+		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
+		#model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
+
+
+		print_progress("\n Finding Mean and Std. Deviation")
+		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
+
+
+		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, _labels, timespan, bins, feature_mean, feature_std)
+
+		return y_preds
+
+
+
 
 	##################
 	## Status Files ##
