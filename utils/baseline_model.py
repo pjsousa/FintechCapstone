@@ -6,9 +6,10 @@ from scipy import stats
 
 from keras.models import Sequential
 from keras.layers import Dense
+
+from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from sklearn.metrics import accuracy_score
-
 
 from utils import vectorized_funs
 
@@ -124,7 +125,7 @@ def fit(model, X_train, y_train, nb_epoch=1):
 
 	return model
 
-def evaluate(model, X_test, y_test, return_type="dict"):
+def evaluate(model, X_test, y_test):
 	"""
 	"""
 	_r = dict()
@@ -133,12 +134,8 @@ def evaluate(model, X_test, y_test, return_type="dict"):
 	gain_test = (y_test > 0.0) * 1.0
 	gain_pred = (y_pred > 0.0) * 1.0
 
+	_r["mse"] = mean_squared_error(y_true, y_pred)
 	_r["r_squared"] = r2_score(y_test, y_pred, multioutput = "uniform_average")
 	_r["accuracy"] = accuracy_score(gain_test, gain_pred)
-
-	if return_type == "pandas":
-		_r["r_squared"] = [_r["r_squared"]]
-		_r["accuracy"] = [_r["accuracy"]]
-		_r = pd.DataFrame.from_dict(_r)
 
 	return _r

@@ -32,23 +32,11 @@ TINY_FLOAT = 1e-10
 class FinCapstone():
 
 	def __init__(self,
-				scenario="baseline",
-				model_name="ExampleFintech",
-				reset_status=False,
-				ticker_list_samplesize=100,
-				path_ticker_list=None,
-				date_from='1900-01-01',
-				date_to=str(datetime.date.today()),
-				fill_value=1e-128,
-				ticker_list=None,
-				timespan=None,
-				timespan_ab=None,
-				train_from="2010-02-15",
-				train_until="2014-12-31",
-				test_from="2016-02-15",
-				test_until="2016-12-31",
-				encode_workpages=7,
-				bins=None):
+		scenario="baseline", model_name="ExampleFintech", reset_status=False,
+		ticker_list_samplesize=100, path_ticker_list=None, date_from='1900-01-01',
+		date_to=str(datetime.date.today()), fill_value=1e-128, ticker_list=None,
+		timespan=None, timespan_ab=None, train_from="2010-02-15", train_until="2014-12-31",
+		test_from="2016-02-15", test_until="2016-12-31", encode_workpages=7, bins=None):
 
 		self.ticker_list = None
 		self.timespan = None
@@ -462,7 +450,7 @@ class FinCapstone():
 		return _r
 
 
-	def train_baseline(self, ticker, nb_epoch=100):
+	def train_baseline(self, ticker, nb_epoch=100, earlystop=30):
 		"""
 		Runs a training session for the baseline model
 		"""
@@ -471,6 +459,7 @@ class FinCapstone():
 		y_train = None
 		X_test = None
 		y_test = None
+		best_epoch = None
 
 		print("Training Baseline for {}, {}".format(ticker, nb_epoch))
 
@@ -480,63 +469,110 @@ class FinCapstone():
 		labels_df = self.load_baseline_labels(ticker, parseDate=True)
 		labels_df.set_index("Date", inplace=True)
 
+		X, y, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+
+		_mask_trainvalid = np.arange(X_train.shape[0])
+		np.random.shuffle(_mask_trainvalid)
+
+		X_train = X[_mask_trainvalid[int(np.ceil(_mask_trainvalid.shape[0] * 0.2)):]]
+		y_train = y[_mask_trainvalid[int(np.ceil(_mask_trainvalid.shape[0] * 0.2)):]]
+		X_valid = X[_mask_trainvalid[:int(np.ceil(_mask_trainvalid.shape[0] * 0.2))]]
+		y_valid = y[_mask_trainvalid[:int(np.ceil(_mask_trainvalid.shape[0] * 0.2))]]
+
+		print("Shapes: [X {}T {}V] [y {}T {}V]".format(X_train.shape[0], X_valid.shape[0], y_train.shape[0], y_valid.shape[0]))
+
 		model = baseline_model.create_model()
-		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
 		for step_idx in np.arange(nb_epoch / 2):
 			_start = datetime.datetime.now()
-			_epoch_index = int(((step_idx*2)+2))
+			itr_epoch = int(((step_idx*2)+2))
+
+			print_progress("  Epoch {} - TRAINING ".format(itr_epoch))
 
 			baseline_model.fit(model, X_train, y_train, 2)
 
-			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
-			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+			print_progress("  Epoch {} - EVAL. TRAIN ".format(itr_epoch))
+			train_eval = baseline_model.evaluate(model, X_train, y_train)
+			print_progress("  Epoch {} - EVAL. VALID ".format(itr_epoch))
+			valid_eval = baseline_model.evaluate(model, X_valid, y_valid)
 
-			results = self.evaluate_baseline(ticker, model, (X_train, y_train, X_test, y_test))
-
-			print(results)
-			
-			self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
-			self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
-			self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
-			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
-			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
-			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "status"] = "COMPLETE"
+			self.eval_status_df.loc[("Nan", itr_epoch), "start"] = _start
+			self.eval_status_df.loc[("Nan", itr_epoch), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[("Nan", itr_epoch), "mse"] = train_eval["mse"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared"] = train_eval["r_squared"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy"] = train_eval["accuracy"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "mse_test"] = valid_eval["mse"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared_test"] = valid_eval["r_squared"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy_test"] = valid_eval["accuracy"]
 
 			self.store_status_files()
 
+			if best_epoch is None:
+				best_epoch = [itr_epoch, valid_eval["r_squared"]]
+				print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+			else:
+				if valid_eval["r_squared"] > best_epoch[1]:
+					best_epoch = [itr_epoch, valid_eval["r_squared"]]
+
+					print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
+					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+				if (itr_epoch - best_epoch[0]) > earlystop:
+					print("Not improving for %s epochs. Stopping." % earlystop)
+					break;
+
+			print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}] V[{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_epoch[0] == 0 else "")))
+			print("\n")
+
 		return model
 
-	def evaluate_baseline(self, ticker, model=None, data=None):
-		_r = [None] * 2
+	def evaluate_baseline(self, ticker, model=None):
+		results = None
 		X_train = None
 		y_train = None
 		X_test = None
 		y_test = None
+		best_epoch = None
 
-		if model is None:
-			model = baseline_model.create_model()
-			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+		print("Training Baseline for {}, {}".format(ticker, -1))
 
-		if data is None:
-			features = self.load_baseline_features(ticker, True).set_index("Date")
-			labels = self.load_baseline_labels(ticker, True).set_index("Date")
+		## Loading dataset for ticker
+		features_df = self.load_baseline_features(ticker, parseDate=True)
+		features_df.set_index("Date", inplace=True)
 
-			X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features, labels, self.train_from, self.train_until, self.test_from, "numpy")
-		else:
-			X_train = data[0]
-			y_train = data[1]
-			X_test = data[2]
-			y_test = data[3]
+		labels_df = self.load_baseline_labels(ticker, parseDate=True)
+		labels_df.set_index("Date", inplace=True)
 
-		print("Evaluating {}".format(ticker))
-		_r[0] = baseline_model.evaluate(model, X_train, y_train, return_type="dict")
-		_r[1] = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
+		X, y, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
-		return _r
+		print("Shapes: [X {}Tst] [y {}Tst]".format(X_test.shape[0], y_test.shape[0]))
+		print_progress("\n Creating model and loading weights")
+		model = baseline_model.create_model()
+		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
 
-	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
+		_start = datetime.datetime.now()
+		print_progress("  Epoch {} - EVAL. TEST ".format(-1))
+		test_eval = baseline_model.evaluate(model, X_test, y_test)
+
+		self.eval_status_df.loc[("Nan", -1), "status"] = "COMPLETE"
+		self.eval_status_df.loc[("Nan", -1), "start"] = _start
+		self.eval_status_df.loc[("Nan", -1), "end"] = datetime.datetime.now()
+		self.eval_status_df.loc[("Nan", -1), "mse"] = None
+		self.eval_status_df.loc[("Nan", -1), "r_squared"] = None
+		self.eval_status_df.loc[("Nan", -1), "accuracy"] = None
+		self.eval_status_df.loc[("Nan", -1), "mse_test"] = test_eval["mse"]
+		self.eval_status_df.loc[("Nan", -1), "r_squared_test"] = test_eval["r_squared"]
+		self.eval_status_df.loc[("Nan", -1), "accuracy_test"] = test_eval["accuracy"]
+
+		self.store_status_files()
+
+		print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}]".format(-1, test_eval["mse"], test_eval["r_squared"], test_eval["accuracy"]))
+		print("\n")
+
+
+	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=30, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
 		model = None
 		best_epoch = None
 		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
@@ -609,14 +645,14 @@ class FinCapstone():
 			if best_epoch is None:
 				best_epoch = [itr_epoch, valid_eval["r_squared"]]
 				print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
-				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
+				#model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 			else:
 				if valid_eval["r_squared"] > best_epoch[1]:
 					best_epoch = [itr_epoch, valid_eval["r_squared"]]
 
 					print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
-					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
+					#model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 
 
@@ -642,7 +678,7 @@ class FinCapstone():
 		_tickers_test = None
 		_dates_test = None
 
-		print("Training Scenario C")
+		print("Evaluating Scenario C")
 		print("train_from={}, train_until={}, test_from={}, test_until={}".format(datetime.datetime.strftime(self.train_from, "%Y-%m-%d"), datetime.datetime.strftime(self.train_until, "%Y-%m-%d"), datetime.datetime.strftime(self.test_from, "%Y-%m-%d"), datetime.datetime.strftime(self.test_until, "%Y-%m-%d")))
 		print("input_shape={}, bins={}, filter_shape={}, output_size={}, FC_layers={}".format(input_shape, bins, filter_shape, output_size, FC_layers))
 		print("\n")
@@ -674,9 +710,9 @@ class FinCapstone():
 		self.eval_status_df.loc[("Nan", -1), "status"] = "COMPLETE"
 		self.eval_status_df.loc[("Nan", -1), "start"] = _start
 		self.eval_status_df.loc[("Nan", -1), "end"] = datetime.datetime.now()
-		self.eval_status_df.loc[("Nan", -1), "mse"] = train_eval["mse"]
-		self.eval_status_df.loc[("Nan", -1), "r_squared"] = train_eval["r_squared"]
-		self.eval_status_df.loc[("Nan", -1), "accuracy"] = train_eval["accuracy"]
+		self.eval_status_df.loc[("Nan", -1), "mse"] = None
+		self.eval_status_df.loc[("Nan", -1), "r_squared"] = None
+		self.eval_status_df.loc[("Nan", -1), "accuracy"] = None
 		self.eval_status_df.loc[("Nan", -1), "mse_test"] = test_eval["mse"]
 		self.eval_status_df.loc[("Nan", -1), "r_squared_test"] = test_eval["r_squared"]
 		self.eval_status_df.loc[("Nan", -1), "accuracy_test"] = test_eval["accuracy"]
