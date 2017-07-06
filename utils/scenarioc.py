@@ -257,7 +257,7 @@ def prepare_problemspace(ticker_list, timespan, bins):
 	return _tickers, _dates, _labels
 
 
-def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6):
+def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
 	"""
 	Creates a new Keras model instance. 
 	Based off of VGG16 architecture.
@@ -302,13 +302,13 @@ def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC
 
 	for i in range(FC_layers):
 		model.add(Dense(4096, activation='relu', kernel_initializer="uniform", kernel_regularizer=regularizers.l2(1e-3)))
+		
+		if dropout > 0.0:
+			model.add(Dropout(dropout))
 
-	#model.add(Dense(output_size, kernel_initializer='normal'))
 	model.add(Dense(output_size, kernel_initializer='uniform'))
 
-	model.compile(loss='mean_squared_error', optimizer="adam")
-	#model.compile(loss='mean_squared_error', optimizer="rmsprop")
-	#model.compile(loss='mean_squared_logarithmic_error', optimizer=RMSprop(1e-3))
+	model.compile(loss='mean_squared_error', optimizer=optimizer)
 
 	return model
 
@@ -326,7 +326,7 @@ def finetune(model, output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
 
 	# FC
 	for i in range(FC_layers):
-		model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+		model.add(Dense(4096, activation='relu', kernel_initializer="uniform", kernel_regularizer=regularizers.l2(1e-3)))
 		if dropout > 0.0:
 			model.add(Dropout(dropout))
 

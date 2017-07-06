@@ -10,7 +10,9 @@ from functools import partial
 from dateutil import parser as dtparser
 from sklearn.externals import joblib
 
+
 from utils import datafetch
+from utils.datafetch import print_progress
 from utils import datapipe
 from utils import baseline_model
 from utils import scenarioa
@@ -393,7 +395,7 @@ class FinCapstone():
 
 	def evaluate(self, train_next=None, ticker=None):
 		"""
-		Evaluates a model for the specified ticker
+		Loads and evaluates a model against our test data.
 		"""
 		work_tickers = None
 		_start = None
@@ -637,30 +639,69 @@ class FinCapstone():
 				if (itr_epoch - best_epoch[0]) > earlystop:
 					print("Not improving for %s epochs. Stopping." % earlystop)
 					break;
-			print_progress("  Epoch {} - [M, R, A] - [{:.6f},{:.6f},{:.6f}] [{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_epoch[0] == 0 else "")))
+			print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}] V[{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_epoch[0] == 0 else "")))
 			print("\n")
 
 		return model
 
-	# def evaluate_scenarioc(self, model, data):
-	# 	_r = [None] * 2
-	# 	X_train = None
-	# 	y_train = None
-	# 	X_test = None
-	# 	y_test = None
+	def evaluate_scenarioc(self, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, finetune_path=None, dropout=0.0, optimizer="adam"):
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+		results = None
+		model = None
+		batch_size = 32
+		X_batch = None
+		y_batch = None
+		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
+		valid_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 
-	# 	X_train = data[0]
-	# 	y_train = data[1]
-	# 	X_test = data[2]
-	# 	y_test = data[3]
+		print("Training Scenario C")
+		print("train_from={}, train_until={}, test_from={}, test_until={}".format(datetime.datetime.strftime(self.train_from, "%Y-%m-%d"), datetime.datetime.strftime(self.train_until, "%Y-%m-%d"), datetime.datetime.strftime(self.test_from, "%Y-%m-%d"), datetime.datetime.strftime(self.test_until, "%Y-%m-%d")))
+		print("input_shape={}, bins={}, filter_shape={}, output_size={}, FC_layers={}".format(input_shape, bins, filter_shape, output_size, FC_layers))
+		print("\n")
 
-	# 	print("Evaluating {}".format(self.model_name))
+		## load all label data and feature contexts for batch loading
+		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), timespan, bins)
+
+		## We'll still want the train data. We'll use it to find the mean and std. deviation of the data.
+		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
+		_mask_test = (_dates >= pd.to_datetime(self.test_from))
 		
-	# 	_r[0] = scenarioc.evaluate(model, X_train, y_train, return_type="dict")
+		_tickers_train = _tickers[_mask_train]
+		_dates_train = _dates[_mask_train]
+		_tickers_test = _tickers[_mask_test]
+		_dates_test = _dates[_mask_test]
+		print("Shapes: [TICKER {}Tst] [DATES {}Tst]".format(_tickers_test.shape[0], _dates_test.shape[0]))
 
-	# 	_r[1] = scenarioc.evaluate(model, X_test, y_test, return_type="dict")
+		print_progress("\n Creating model and loading weights")
+		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
+		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
 
-	# 	return _r
+		print_progress("\n Finding Mean and Std. Deviation")
+		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
+
+		_start = datetime.datetime.now()
+		print_progress("  Epoch {} - EVAL. TEST ".format(-1))
+		test_eval = scenarioc.evaluate(model, _dates_test, _tickers_test, _labels, timespan, bins, feature_mean, feature_std)
+
+		self.eval_status_df.loc[("Nan", -1), "status"] = "COMPLETE"
+		self.eval_status_df.loc[("Nan", -1), "start"] = _start
+		self.eval_status_df.loc[("Nan", -1), "end"] = datetime.datetime.now()
+		self.eval_status_df.loc[("Nan", -1), "mse"] = train_eval["mse"]
+		self.eval_status_df.loc[("Nan", -1), "r_squared"] = train_eval["r_squared"]
+		self.eval_status_df.loc[("Nan", -1), "accuracy"] = train_eval["accuracy"]
+		self.eval_status_df.loc[("Nan", -1), "mse_test"] = test_eval["mse"]
+		self.eval_status_df.loc[("Nan", -1), "r_squared_test"] = test_eval["r_squared"]
+		self.eval_status_df.loc[("Nan", -1), "accuracy_test"] = test_eval["accuracy"]
+
+		self.store_status_files()
+
+		print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}]".format(-1, test_eval["mse"], test_eval["r_squared"], test_eval["accuracy"]))
+		print("\n")
+
+		return model
 
 	##################
 	## Status Files ##
@@ -867,12 +908,6 @@ class FinCapstone():
 		self._step_f = datetime.datetime.now()
 		self._end = self._step_f
 		print(" V  END       - {} (TOOK {})".format(str(self._end), str(self._end - self._start)))
-
-def print_progress(str_output):
-	sys.stdout.write('\r')
-	sys.stdout.write(str_output)
-	sys.stdout.flush()
-
 
 def setup():
 	path_list = [ paths.DATA_PATH, paths.RAW_DATA_PATH, paths.TIER1_DATA_PATH, paths.TIER2_DATA_PATH, paths.BASELINE_DATA_PATH, paths.TRIALA_DATA_PATH, paths.TEMP_PATH, paths.RESULTS_PATH]
