@@ -35,9 +35,6 @@ def calc_features(raw_df, verbose=True):
 	"""
 	result_df = None
 
-	# if verbose:
-	# 	self.print_verbose_start()
-
 	result_df = pd.DataFrame()
 	result_df["Date"] = raw_df["Date"]
 	result_df["CHANGE_OPEN_1"] = ((raw_df["Open"] / raw_df["Open"].shift(1)) - 1)
@@ -45,9 +42,6 @@ def calc_features(raw_df, verbose=True):
 	result_df["CHANGE_LOW_1"] = ((raw_df["Low"] / raw_df["Low"].shift(1)) - 1)
 	result_df["CHANGE_VOLUME_1"] = ((raw_df["Volume"] / raw_df["Volume"].shift(1)) - 1)
 
-
-	# if verbose:
-	# 	self.print_verbose_end()
 
 	return result_df
 
@@ -58,8 +52,6 @@ def calc_labels(raw_df, timespan, verbose=True):
 	"""
 	result_df = None
 
-	# if verbose:
-	# 	self.print_verbose_start()
 
 	result_df = pd.DataFrame()
 	result_df["Date"] = raw_df["Date"]

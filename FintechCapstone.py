@@ -545,15 +545,7 @@ class FinCapstone():
 		return _r
 
 	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
-		X_train = None
-		y_train = None
-		X_test = None
-		y_test = None
-		results = None
 		model = None
-		batch_size = 32
-		X_batch = None
-		y_batch = None
 		best_epoch = None
 		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 		valid_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
@@ -645,17 +637,18 @@ class FinCapstone():
 		return model
 
 	def evaluate_scenarioc(self, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, finetune_path=None, dropout=0.0, optimizer="adam"):
-		X_train = None
-		y_train = None
-		X_test = None
-		y_test = None
-		results = None
 		model = None
-		batch_size = 32
-		X_batch = None
-		y_batch = None
 		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
-		valid_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
+		test_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
+		_tickers = None
+		_dates = None
+		_labels = None
+		_mask_train = None
+		_mask_test = None
+		_tickers_train = None
+		_dates_train = None
+		_tickers_test = None
+		_dates_test = None
 
 		print("Training Scenario C")
 		print("train_from={}, train_until={}, test_from={}, test_until={}".format(datetime.datetime.strftime(self.train_from, "%Y-%m-%d"), datetime.datetime.strftime(self.train_until, "%Y-%m-%d"), datetime.datetime.strftime(self.test_from, "%Y-%m-%d"), datetime.datetime.strftime(self.test_until, "%Y-%m-%d")))
@@ -887,27 +880,6 @@ class FinCapstone():
 		
 		return scenarioc.load_scenarioc_labels(ticker, parseDate)
 
-
-	#####################
-	## Verbose Helpers ##
-	#####################
-	def reset_verboseclock(self):
-		self._start = datetime.datetime.now()
-		self._step_i = self._start
-
-	def print_verbose_start(self):
-		self.reset_verboseclock()
-		print("| | START     - {}".format(str(self._start)))
-
-	def print_verbose(self, tag):
-		self._step_f = datetime.datetime.now()
-		print("\ / {} - {}".format(tag, str(self._step_f - self._step_i)))
-		self._step_i = self._step_f
-
-	def print_verbose_end(self):
-		self._step_f = datetime.datetime.now()
-		self._end = self._step_f
-		print(" V  END       - {} (TOOK {})".format(str(self._end), str(self._end - self._start)))
 
 def setup():
 	path_list = [ paths.DATA_PATH, paths.RAW_DATA_PATH, paths.TIER1_DATA_PATH, paths.TIER2_DATA_PATH, paths.BASELINE_DATA_PATH, paths.TRIALA_DATA_PATH, paths.TEMP_PATH, paths.RESULTS_PATH]
