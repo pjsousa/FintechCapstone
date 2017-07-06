@@ -732,8 +732,8 @@ class FinCapstone():
 		_done_count = 0
 		_err_count = 0
 
+		print_progress("Encoding missing images")
 		for itr_ticker, itr_date in zip(_tickers_predict, _dates_predict):
-			print_progress("Encoding missing images")
 			## skips if we already created the image some other run
 			if scenarioc.check_encoding_exists(itr_ticker, itr_date, timespan, bins):
 				#print("File Exists. {} {}".format(itr[0], itr[1]))
@@ -751,20 +751,10 @@ class FinCapstone():
 		## load all label data and feature contexts for batch loading
 		_tickers, _dates, _labels = scenarioc.prepare_problemspace(_distinct_tickers, timespan, bins)
 
-
-		_tickers
-
-		_dates
-
-
-		_mask_predict = pd.DataFrame([x for x in zip(_tickers, _dates)])
-		_mask_predict = _mask_predict.apply(lambda x: tuple(x) in _contexts, axis=1).values
-		_mask_predict
-
-
 		## We'll still want the train data. We'll use it to find the mean and std. deviation of the data.
 		_mask_train = (_dates > pd.to_datetime(trial.train_from)) & (_dates < pd.to_datetime(trial.train_until))
-		_mask_predict = _mask_predict
+		_mask_predict = pd.DataFrame([x for x in zip(_tickers, _dates)])
+		_mask_predict = _mask_predict.apply(lambda x: tuple(x) in _contexts, axis=1).values
 
 		_tickers_train = _tickers[_mask_train]
 		_dates_train = _dates[_mask_train]
@@ -772,17 +762,15 @@ class FinCapstone():
 		_dates_predict = _dates[_mask_predict]
 		print("Shapes: [TICKER {}] [DATES {}] [TICKER {}] [DATES {}]".format(_tickers_train.shape[0], _dates_train.shape[0], _tickers_predict.shape[0], _dates_predict.shape[0]))
 
-
 		print_progress("\n Creating model and loading weights")
 		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
-		#model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
+		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
 
 
 		print_progress("\n Finding Mean and Std. Deviation")
 		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
 
-
-		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, _labels, timespan, bins, feature_mean, feature_std)
+		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
 
 		return y_preds
 

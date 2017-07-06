@@ -353,7 +353,10 @@ def seq_data(dates, tickers, labels, timespan, bins):
 
 		## Load the enconding and slice the row from the labels dictionary
 		X = load_scenarioc_encodings(_iter[1], datetime.date.strftime(_iter[0], "%Y-%m-%d"), timespan, bins)
-		y = labels[_iter[1]].loc[_iter[0]].values
+		if labels is not None:
+			y = labels[_iter[1]].loc[_iter[0]].values
+		else:
+			y = None
 		
 		## when X.shape is an empty tuple, we don't yield and go to the next iteration
 		try:
@@ -378,7 +381,9 @@ def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
 			try:
 				_r, _rr = next(seq)
 				X.append(_r)
-				y.append(_rr)
+				if labels is not None:
+					y.append(_rr)
+
 			except StopIteration:
 				yield X, y
 				raise StopIteration
@@ -388,6 +393,8 @@ def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
 def features_stats(dates, tickers, labels, timespan, bins):
 	"""
 	Will load all the context passed in in order to get the mean and standard deviation of the whole feature space.
+	Since we are calculating the values in batches, for the whole dataset we can use the mean of all the means. Although,
+	for the standard deviation that is not the case.
 	"""
 	_r = []
 	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
@@ -401,7 +408,12 @@ def features_stats(dates, tickers, labels, timespan, bins):
 	except StopIteration:
 		_r = np.array(_r)
 
-	return _r[:,0].mean(), np.sqrt(np.mean(_r[:,1]))
+	if _r.shape[0] == 0:
+		_r = np.array([0, 1])
+	else:
+		_r = [_r[:,0].mean(), np.sqrt(np.mean(_r[:,1]))]
+
+	return _r[0], _r[1]
 
 import matplotlib.pyplot as plt
 
@@ -474,26 +486,21 @@ def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, featu
 
 	return _r
 
-def predict(ticker):
+def predict(model, dates, tickers, timespan, bins, features_mean, features_std):
 	_r = dict()
-	y_true = []
 	y_pred = []
 
-	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
+	data_iterator = seq_batch(dates, tickers, None, timespan, bins)
 
 	try:
 		while True:
 			X_batch, y_batch = next(data_iterator)
 			X_batch = np.array(X_batch)
 
-			y_batch = np.where(~np.isnan(y_batch), y_batch, 0.0)
-			y_batch = np.where(~np.isinf(y_batch), y_batch, 0.0)
-
 			## Normalize Features
 			X_batch = (X_batch - features_mean) / features_std
 
 			y_pred.append(model.predict(X_batch, verbose=0))
-			y_true.append(y_batch)
 
 	except StopIteration:
 		v = None
