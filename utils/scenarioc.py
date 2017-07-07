@@ -257,7 +257,7 @@ def prepare_problemspace(ticker_list, timespan, bins):
 	return _tickers, _dates, _labels
 
 
-def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6):
+def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
 	"""
 	Creates a new Keras model instance. 
 	Based off of VGG16 architecture.
@@ -302,13 +302,13 @@ def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC
 
 	for i in range(FC_layers):
 		model.add(Dense(4096, activation='relu', kernel_initializer="uniform", kernel_regularizer=regularizers.l2(1e-3)))
+		
+		if dropout > 0.0:
+			model.add(Dropout(dropout))
 
-	#model.add(Dense(output_size, kernel_initializer='normal'))
 	model.add(Dense(output_size, kernel_initializer='uniform'))
 
-	model.compile(loss='mean_squared_error', optimizer="adam")
-	#model.compile(loss='mean_squared_error', optimizer="rmsprop")
-	#model.compile(loss='mean_squared_logarithmic_error', optimizer=RMSprop(1e-3))
+	model.compile(loss='mean_squared_error', optimizer=optimizer)
 
 	return model
 
@@ -326,7 +326,7 @@ def finetune(model, output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
 
 	# FC
 	for i in range(FC_layers):
-		model.add(Dense(4096, activation='relu', kernel_initializer="uniform"))
+		model.add(Dense(4096, activation='relu', kernel_initializer="uniform", kernel_regularizer=regularizers.l2(1e-3)))
 		if dropout > 0.0:
 			model.add(Dropout(dropout))
 
@@ -353,7 +353,10 @@ def seq_data(dates, tickers, labels, timespan, bins):
 
 		## Load the enconding and slice the row from the labels dictionary
 		X = load_scenarioc_encodings(_iter[1], datetime.date.strftime(_iter[0], "%Y-%m-%d"), timespan, bins)
-		y = labels[_iter[1]].loc[_iter[0]].values
+		if labels is not None:
+			y = labels[_iter[1]].loc[_iter[0]].values
+		else:
+			y = None
 		
 		## when X.shape is an empty tuple, we don't yield and go to the next iteration
 		try:
@@ -378,7 +381,9 @@ def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
 			try:
 				_r, _rr = next(seq)
 				X.append(_r)
-				y.append(_rr)
+				if labels is not None:
+					y.append(_rr)
+
 			except StopIteration:
 				yield X, y
 				raise StopIteration
@@ -388,6 +393,8 @@ def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
 def features_stats(dates, tickers, labels, timespan, bins):
 	"""
 	Will load all the context passed in in order to get the mean and standard deviation of the whole feature space.
+	Since we are calculating the values in batches, for the whole dataset we can use the mean of all the means. Although,
+	for the standard deviation that is not the case.
 	"""
 	_r = []
 	data_iterator = seq_batch(dates, tickers, labels, timespan, bins)
@@ -401,7 +408,12 @@ def features_stats(dates, tickers, labels, timespan, bins):
 	except StopIteration:
 		_r = np.array(_r)
 
-	return _r[:,0].mean(), np.sqrt(np.mean(_r[:,1]))
+	if _r.shape[0] == 0:
+		_r = np.array([0, 1])
+	else:
+		_r = [_r[:,0].mean(), np.sqrt(np.mean(_r[:,1]))]
+
+	return _r[0], _r[1]
 
 import matplotlib.pyplot as plt
 
@@ -474,27 +486,28 @@ def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, featu
 
 	return _r
 
-def predict(ticker):
-	features_df = scenarioc.load_scenarioc_features(ticker, True)
-	labels_df = scenarioc.load_scenarioc_labels(ticker, True)
+def predict(model, dates, tickers, timespan, bins, features_mean, features_std):
+	_r = dict()
+	y_pred = []
 
-	predictions_df = pd.DataFrame()
-	predictions_df["Date"] = labels_df["Date"].copy()
-	predictions_df = pd.concat([predictions_df, np.multiply(labels_df.iloc[:,1:], np.random.rand(2133,3))], axis=1)
+	data_iterator = seq_batch(dates, tickers, None, timespan, bins)
 
-	futureprices_df = pd.DataFrame(
-				data=predictions_df.iloc[:,1:].apply(lambda x : x * features_df["Close"]).values,
-				columns=["CLOSE_1", "CLOSE_30", "CLOSE_60"])
+	try:
+		while True:
+			X_batch, y_batch = next(data_iterator)
+			X_batch = np.array(X_batch)
 
-	predictions_df = pd.concat([predictions_df, futureprices_df], axis=1)
-	dates_missing = pd.DataFrame(pd.date_range(predictions_df["Date"].max(), periods=60, freq='B').values, columns=["Date"])
-	predictions_df = pd.concat([predictions_df, dates_missing], axis=0)
+			## Normalize Features
+			X_batch = (X_batch - features_mean) / features_std
 
-	predictions_df["CLOSE_1"] = predictions_df["CLOSE_1"].shift(1)
-	predictions_df["CLOSE_30"] = predictions_df["CLOSE_30"].shift(30)
-	predictions_df["CLOSE_60"] = predictions_df["CLOSE_60"].shift(60)
-	
-	return predictions_df
+			y_pred.append(model.predict(X_batch, verbose=0))
+
+	except StopIteration:
+		v = None
+
+	y_pred = np.concatenate(y_pred)
+
+	return y_pred
 
 
 def store_scenarioc_features(features_df, ticker):

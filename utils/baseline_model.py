@@ -6,9 +6,10 @@ from scipy import stats
 
 from keras.models import Sequential
 from keras.layers import Dense
+
+from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from sklearn.metrics import accuracy_score
-
 
 from utils import vectorized_funs
 
@@ -35,9 +36,6 @@ def calc_features(raw_df, verbose=True):
 	"""
 	result_df = None
 
-	# if verbose:
-	# 	self.print_verbose_start()
-
 	result_df = pd.DataFrame()
 	result_df["Date"] = raw_df["Date"]
 	result_df["CHANGE_OPEN_1"] = ((raw_df["Open"] / raw_df["Open"].shift(1)) - 1)
@@ -45,9 +43,6 @@ def calc_features(raw_df, verbose=True):
 	result_df["CHANGE_LOW_1"] = ((raw_df["Low"] / raw_df["Low"].shift(1)) - 1)
 	result_df["CHANGE_VOLUME_1"] = ((raw_df["Volume"] / raw_df["Volume"].shift(1)) - 1)
 
-
-	# if verbose:
-	# 	self.print_verbose_end()
 
 	return result_df
 
@@ -58,8 +53,6 @@ def calc_labels(raw_df, timespan, verbose=True):
 	"""
 	result_df = None
 
-	# if verbose:
-	# 	self.print_verbose_start()
 
 	result_df = pd.DataFrame()
 	result_df["Date"] = raw_df["Date"]
@@ -132,7 +125,7 @@ def fit(model, X_train, y_train, nb_epoch=1):
 
 	return model
 
-def evaluate(model, X_test, y_test, return_type="dict"):
+def evaluate(model, X_test, y_test):
 	"""
 	"""
 	_r = dict()
@@ -141,12 +134,8 @@ def evaluate(model, X_test, y_test, return_type="dict"):
 	gain_test = (y_test > 0.0) * 1.0
 	gain_pred = (y_pred > 0.0) * 1.0
 
+	_r["mse"] = mean_squared_error(y_true, y_pred)
 	_r["r_squared"] = r2_score(y_test, y_pred, multioutput = "uniform_average")
 	_r["accuracy"] = accuracy_score(gain_test, gain_pred)
-
-	if return_type == "pandas":
-		_r["r_squared"] = [_r["r_squared"]]
-		_r["accuracy"] = [_r["accuracy"]]
-		_r = pd.DataFrame.from_dict(_r)
 
 	return _r

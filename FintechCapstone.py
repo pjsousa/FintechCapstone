@@ -10,7 +10,9 @@ from functools import partial
 from dateutil import parser as dtparser
 from sklearn.externals import joblib
 
+
 from utils import datafetch
+from utils.datafetch import print_progress
 from utils import datapipe
 from utils import baseline_model
 from utils import scenarioa
@@ -25,29 +27,16 @@ import sys
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-
 TINY_FLOAT = 1e-10
 
 class FinCapstone():
 
 	def __init__(self,
-				scenario="baseline",
-				model_name="ExampleFintech",
-				reset_status=False,
-				ticker_list_samplesize=100,
-				path_ticker_list=None,
-				date_from='1900-01-01',
-				date_to=str(datetime.date.today()),
-				fill_value=1e-128,
-				ticker_list=None,
-				timespan=None,
-				timespan_ab=None,
-				train_from="2010-02-15",
-				train_until="2014-12-31",
-				test_from="2016-02-15",
-				test_until="2016-12-31",
-				encode_workpages=7,
-				bins=None):
+		scenario="baseline", model_name="ExampleFintech", reset_status=False,
+		ticker_list_samplesize=100, path_ticker_list=None, date_from='1900-01-01',
+		date_to=str(datetime.date.today()), fill_value=1e-128, ticker_list=None,
+		timespan=None, timespan_ab=None, train_from="2010-02-15", train_until="2014-12-31",
+		test_from="2016-02-15", test_until="2016-12-31", encode_workpages=7, bins=None):
 
 		self.ticker_list = None
 		self.timespan = None
@@ -140,7 +129,7 @@ class FinCapstone():
 		ticker_list = self.fetchstatus_df[self.fetchstatus_df["status"] == "OK"]
 		ticker_list = ticker_list[~(self.featureengineer_status_df["status"] == "NOK")]
 
-		return ticker_list
+		return ticker_list.index.tolist()
 
 
 
@@ -157,7 +146,7 @@ class FinCapstone():
 
 
 
-	def feature_engineering(self, scenario=None):
+	def feature_engineering(self, scenario=None, ticker_list=None):
 		"""
 		Based off of the raw data, performs the feature and label calculations for the specified scenario.
 		Tracks time and status of the process for each ticker.
@@ -165,7 +154,7 @@ class FinCapstone():
 		scenario = self.scenario if scenario is None else scenario
 		
 		## Only work with tickers that were successfull during datafetch
-		ticker_list = self.provision_validtickerlist()
+		ticker_list = self.provision_validtickerlist() if ticker_list is None else ticker_list
 		ticker_count = len(ticker_list)
 		itr_count = 0
 		work_df = None
@@ -173,12 +162,11 @@ class FinCapstone():
 
 		print("\n{} - Feature/Label Engineering - {} - [{} ; {}] ".format(datetime.datetime.now(), scenario, self.date_from, self.date_to))
 
-		for ix, row in ticker_list.iterrows():
+		for itr_ticker in ticker_list:
 			itr_count += 1
 			try:
 				_start = datetime.datetime.now()
-				itr_ticker = ix
-				
+
 				## Load raw data and slice for the dates we want for our problem
 				itr_df = datafetch.load_raw_frame(itr_ticker,parseDate=False, dropAdjClose=False)
 				
@@ -391,9 +379,9 @@ class FinCapstone():
 		self.store_status_files()
 
 
-	def evaluate(self, train_next=None, ticker=None):
+	def evaluate(self, train_next=None, ticker=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, finetune_path=None, dropout=0.0, optimizer="adam"):
 		"""
-		Evaluates a model for the specified ticker
+		Loads and evaluates a model against our test data.
 		"""
 		work_tickers = None
 		_start = None
@@ -415,15 +403,10 @@ class FinCapstone():
 		if self.scenario == "baseline":
 			print("EVAL BA model for %s tickers" % n_tickers)
 			model = baseline_model.create_model()
-		elif self.scenario == "scenarioa":
+		elif self.scenario == "scenarioc":
 			n_tickers = len(self.valid_ticker_list())
 			print("EVAL SA model for %s tickers" % n_tickers)
-			model = scenarioa.create_model(n_tickers)
-		elif self.scenario == "scenariob":
-			n_tickers = len(self.valid_ticker_list())
-			print("EVAL SA model for %s tickers" % n_tickers)
-			model = scenariob.create_model(n_tickers)
-
+			model = scenariob.create_model(input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, timespan=timespan, bins=bins, finetune_path=finetune_path, dropout=dropout, optimizer=optimizer)
 
 		for idx_ticker in range(train_next):
 			itr_ticker = work_tickers[idx_ticker]
@@ -462,12 +445,12 @@ class FinCapstone():
 
 
 	def valid_ticker_list(self):
-		_r = self.provision_validtickerlist().index.tolist()
+		_r = self.provision_validtickerlist()
 
 		return _r
 
 
-	def train_baseline(self, ticker, nb_epoch=100):
+	def train_baseline(self, ticker, nb_epoch=100, earlystop=30):
 		"""
 		Runs a training session for the baseline model
 		"""
@@ -476,6 +459,7 @@ class FinCapstone():
 		y_train = None
 		X_test = None
 		y_test = None
+		best_epoch = None
 
 		print("Training Baseline for {}, {}".format(ticker, nb_epoch))
 
@@ -485,73 +469,111 @@ class FinCapstone():
 		labels_df = self.load_baseline_labels(ticker, parseDate=True)
 		labels_df.set_index("Date", inplace=True)
 
+		X, y, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+
+		_mask_trainvalid = np.arange(X_train.shape[0])
+		np.random.shuffle(_mask_trainvalid)
+
+		X_train = X[_mask_trainvalid[int(np.ceil(_mask_trainvalid.shape[0] * 0.2)):]]
+		y_train = y[_mask_trainvalid[int(np.ceil(_mask_trainvalid.shape[0] * 0.2)):]]
+		X_valid = X[_mask_trainvalid[:int(np.ceil(_mask_trainvalid.shape[0] * 0.2))]]
+		y_valid = y[_mask_trainvalid[:int(np.ceil(_mask_trainvalid.shape[0] * 0.2))]]
+
+		print("Shapes: [X {}T {}V] [y {}T {}V]".format(X_train.shape[0], X_valid.shape[0], y_train.shape[0], y_valid.shape[0]))
+
 		model = baseline_model.create_model()
-		X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
 		for step_idx in np.arange(nb_epoch / 2):
 			_start = datetime.datetime.now()
-			_epoch_index = int(((step_idx*2)+2))
+			itr_epoch = int(((step_idx*2)+2))
+
+			print_progress("  Epoch {} - TRAINING ".format(itr_epoch))
 
 			baseline_model.fit(model, X_train, y_train, 2)
 
-			model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker, _epoch_index))
-			model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+			print_progress("  Epoch {} - EVAL. TRAIN ".format(itr_epoch))
+			train_eval = baseline_model.evaluate(model, X_train, y_train)
+			print_progress("  Epoch {} - EVAL. VALID ".format(itr_epoch))
+			valid_eval = baseline_model.evaluate(model, X_valid, y_valid)
 
-			results = self.evaluate_baseline(ticker, model, (X_train, y_train, X_test, y_test))
-
-			print(results)
-			
-			self.eval_status_df.loc[(ticker, _epoch_index), "status"] = "COMPLETE"
-			self.eval_status_df.loc[(ticker, _epoch_index), "start"] = _start
-			self.eval_status_df.loc[(ticker, _epoch_index), "end"] = datetime.datetime.now()
-			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared"] = results[0]["r_squared"]
-			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy"] = results[0]["accuracy"]
-			self.eval_status_df.loc[(ticker, _epoch_index), "r_squared_test"] = results[1]["r_squared"]
-			self.eval_status_df.loc[(ticker, _epoch_index), "accuracy_test"] = results[1]["accuracy"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "status"] = "COMPLETE"
+			self.eval_status_df.loc[("Nan", itr_epoch), "start"] = _start
+			self.eval_status_df.loc[("Nan", itr_epoch), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[("Nan", itr_epoch), "mse"] = train_eval["mse"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared"] = train_eval["r_squared"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy"] = train_eval["accuracy"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "mse_test"] = valid_eval["mse"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared_test"] = valid_eval["r_squared"]
+			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy_test"] = valid_eval["accuracy"]
 
 			self.store_status_files()
 
+			if best_epoch is None:
+				best_epoch = [itr_epoch, valid_eval["r_squared"]]
+				print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
+				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+			else:
+				if valid_eval["r_squared"] > best_epoch[1]:
+					best_epoch = [itr_epoch, valid_eval["r_squared"]]
+
+					print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
+					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+				if (itr_epoch - best_epoch[0]) > earlystop:
+					print("Not improving for %s epochs. Stopping." % earlystop)
+					break;
+
+			print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}] V[{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_epoch[0] == 0 else "")))
+			print("\n")
+
 		return model
 
-
-	def evaluate_baseline(self, ticker, model=None, data=None):
-		_r = [None] * 2
-		X_train = None
-		y_train = None
-		X_test = None
-		y_test = None
-
-		if model is None:
-			model = baseline_model.create_model()
-			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
-
-		if data is None:
-			features = self.load_baseline_features(ticker, True).set_index("Date")
-			labels = self.load_baseline_labels(ticker, True).set_index("Date")
-
-			X_train, y_train, X_test, y_test = baseline_model.prepare_problemspace(features, labels, self.train_from, self.train_until, self.test_from, "numpy")
-		else:
-			X_train = data[0]
-			y_train = data[1]
-			X_test = data[2]
-			y_test = data[3]
-
-		print("Evaluating {}".format(ticker))
-		_r[0] = baseline_model.evaluate(model, X_train, y_train, return_type="dict")
-		_r[1] = baseline_model.evaluate(model, X_test, y_test, return_type="dict")
-
-		return _r
-
-	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=5, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
-		X_train = None
-		y_train = None
-		X_test = None
-		y_test = None
+	def evaluate_baseline(self, ticker, model=None):
 		results = None
+		X_train = None
+		y_train = None
+		X_test = None
+		y_test = None
+		best_epoch = None
+
+		print("Training Baseline for {}, {}".format(ticker, -1))
+
+		## Loading dataset for ticker
+		features_df = self.load_baseline_features(ticker, parseDate=True)
+		features_df.set_index("Date", inplace=True)
+
+		labels_df = self.load_baseline_labels(ticker, parseDate=True)
+		labels_df.set_index("Date", inplace=True)
+
+		X, y, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
+
+		print("Shapes: [X {}Tst] [y {}Tst]".format(X_test.shape[0], y_test.shape[0]))
+		print_progress("\n Creating model and loading weights")
+		model = baseline_model.create_model()
+		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+
+		_start = datetime.datetime.now()
+		print_progress("  Epoch {} - EVAL. TEST ".format(-1))
+		test_eval = baseline_model.evaluate(model, X_test, y_test)
+
+		self.eval_status_df.loc[("Nan", -1), "status"] = "COMPLETE"
+		self.eval_status_df.loc[("Nan", -1), "start"] = _start
+		self.eval_status_df.loc[("Nan", -1), "end"] = datetime.datetime.now()
+		self.eval_status_df.loc[("Nan", -1), "mse"] = None
+		self.eval_status_df.loc[("Nan", -1), "r_squared"] = None
+		self.eval_status_df.loc[("Nan", -1), "accuracy"] = None
+		self.eval_status_df.loc[("Nan", -1), "mse_test"] = test_eval["mse"]
+		self.eval_status_df.loc[("Nan", -1), "r_squared_test"] = test_eval["r_squared"]
+		self.eval_status_df.loc[("Nan", -1), "accuracy_test"] = test_eval["accuracy"]
+
+		self.store_status_files()
+
+		print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}]".format(-1, test_eval["mse"], test_eval["r_squared"], test_eval["accuracy"]))
+		print("\n")
+
+
+	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=30, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):
 		model = None
-		batch_size = 32
-		X_batch = None
-		y_batch = None
 		best_epoch = None
 		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
 		valid_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
@@ -623,44 +645,173 @@ class FinCapstone():
 			if best_epoch is None:
 				best_epoch = [itr_epoch, valid_eval["r_squared"]]
 				print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
-				model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
+				#model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 				model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 			else:
 				if valid_eval["r_squared"] > best_epoch[1]:
 					best_epoch = [itr_epoch, valid_eval["r_squared"]]
 
 					print_progress("  Epoch {} - DUMP WEIGTHS ".format(itr_epoch))
-					model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
+					#model.save_weights("{}/weights{}_{}_{}_step{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample, itr_epoch))
 					model.save_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, useSample))
 
 
 				if (itr_epoch - best_epoch[0]) > earlystop:
 					print("Not improving for %s epochs. Stopping." % earlystop)
 					break;
-			print_progress("  Epoch {} - [M, R, A] - [{:.6f},{:.6f},{:.6f}] [{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_epoch[0] == 0 else "")))
+			print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}] V[{:.6f},{:.6f},{:.6f}] {} ".format(itr_epoch, train_eval["mse"], train_eval["r_squared"], train_eval["accuracy"], valid_eval["mse"], valid_eval["r_squared"], valid_eval["accuracy"], ("*" if itr_epoch - best_epoch[0] == 0 else "")))
 			print("\n")
 
 		return model
 
-	# def evaluate_scenarioc(self, model, data):
-	# 	_r = [None] * 2
-	# 	X_train = None
-	# 	y_train = None
-	# 	X_test = None
-	# 	y_test = None
+	def evaluate_scenarioc(self,finetune_path, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
+		model = None
+		train_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
+		test_eval = pd.DataFrame(columns=["mse", "r_squared", "accuracy"])
+		_tickers = None
+		_dates = None
+		_labels = None
+		_mask_train = None
+		_mask_test = None
+		_tickers_train = None
+		_dates_train = None
+		_tickers_test = None
+		_dates_test = None
 
-	# 	X_train = data[0]
-	# 	y_train = data[1]
-	# 	X_test = data[2]
-	# 	y_test = data[3]
+		print("Evaluating Scenario C")
+		print("train_from={}, train_until={}, test_from={}, test_until={}".format(datetime.datetime.strftime(self.train_from, "%Y-%m-%d"), datetime.datetime.strftime(self.train_until, "%Y-%m-%d"), datetime.datetime.strftime(self.test_from, "%Y-%m-%d"), datetime.datetime.strftime(self.test_until, "%Y-%m-%d")))
+		print("input_shape={}, bins={}, filter_shape={}, output_size={}, FC_layers={}".format(input_shape, bins, filter_shape, output_size, FC_layers))
+		print("\n")
 
-	# 	print("Evaluating {}".format(self.model_name))
+		## load all label data and feature contexts for batch loading
+		_tickers, _dates, _labels = scenarioc.prepare_problemspace(self.valid_ticker_list(), timespan, bins)
+
+		## We'll still want the train data. We'll use it to find the mean and std. deviation of the data.
+		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until)) 
+		_mask_test = (_dates >= pd.to_datetime(self.test_from))
 		
-	# 	_r[0] = scenarioc.evaluate(model, X_train, y_train, return_type="dict")
+		_tickers_train = _tickers[_mask_train]
+		_dates_train = _dates[_mask_train]
+		_tickers_test = _tickers[_mask_test]
+		_dates_test = _dates[_mask_test]
+		print("Shapes: [TICKER {}Tst] [DATES {}Tst]".format(_tickers_test.shape[0], _dates_test.shape[0]))
 
-	# 	_r[1] = scenarioc.evaluate(model, X_test, y_test, return_type="dict")
+		print_progress("\n Creating model and loading weights")
+		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
+		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
 
-	# 	return _r
+		print_progress("\n Finding Mean and Std. Deviation")
+		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
+
+		_start = datetime.datetime.now()
+		print_progress("  Epoch {} - EVAL. TEST ".format(-1))
+		test_eval = scenarioc.evaluate(model, _dates_test, _tickers_test, _labels, timespan, bins, feature_mean, feature_std)
+
+		self.eval_status_df.loc[("Nan", -1), "status"] = "COMPLETE"
+		self.eval_status_df.loc[("Nan", -1), "start"] = _start
+		self.eval_status_df.loc[("Nan", -1), "end"] = datetime.datetime.now()
+		self.eval_status_df.loc[("Nan", -1), "mse"] = None
+		self.eval_status_df.loc[("Nan", -1), "r_squared"] = None
+		self.eval_status_df.loc[("Nan", -1), "accuracy"] = None
+		self.eval_status_df.loc[("Nan", -1), "mse_test"] = test_eval["mse"]
+		self.eval_status_df.loc[("Nan", -1), "r_squared_test"] = test_eval["r_squared"]
+		self.eval_status_df.loc[("Nan", -1), "accuracy_test"] = test_eval["accuracy"]
+
+		self.store_status_files()
+
+		print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}]".format(-1, test_eval["mse"], test_eval["r_squared"], test_eval["accuracy"]))
+		print("\n")
+
+		return model
+
+	def predict_scenarioc(self,finetune_path, tickers, dates, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
+		print_progress("Finding distinct tickers")
+		time.sleep(1)
+		print_progress("Force-Fetching necessary tickers")
+		time.sleep(1)
+		print_progress("Running Feature Engineering")
+		time.sleep(1)
+		print_progress("Encoding missing images")
+		time.sleep(1)
+		print_progress("Running Predict")
+		time.sleep(1)
+
+
+		_tickers_predict = ["NVDA","NFLX", "NVDA"]
+		_dates_predict = ["2017-03-03", "2017-03-03", "2017-03-06"]
+
+		input_shape=(224,224,3)
+		filter_shape=(3, 3)
+		output_size=3
+		FC_layers=4
+		timespan=224
+		bins=100
+		finetune_path=None
+		dropout=0.0
+		optimizer="adam"
+
+
+		_contexts = [tuple(x) for x in zip(_tickers_predict, pd.to_datetime(_dates_predict))]
+		_distinct_tickers = np.unique(_tickers_predict)
+		_distinct_tickers.tolist()
+		_distinct_dates = pd.to_datetime(np.unique(_dates_predict))
+		_distinct_dates.tolist()
+
+		print_progress("Force-Fetching necessary tickers\n")
+		initial_dataload(_distinct_tickers, force=True)
+
+		print_progress("Running Feature Engineering")
+		trial.feature_engineering(ticker_list=_distinct_tickers.tolist())
+
+
+		_skip_count = 0
+		_done_count = 0
+		_err_count = 0
+
+		print_progress("Encoding missing images")
+		for itr_ticker, itr_date in zip(_tickers_predict, _dates_predict):
+			## skips if we already created the image some other run
+			if scenarioc.check_encoding_exists(itr_ticker, itr_date, timespan, bins):
+				#print("File Exists. {} {}".format(itr[0], itr[1]))
+				_skip_count += 1
+				continue
+
+				## call encode
+				mtf = scenarioc.encode_features(itr_ticker, itr_date, bins, timespan, trial.model_name)
+
+				scenarioc.store_scenarioc_encodings(mtf, itr_ticker, itr_date, timespan, bins)
+				_done_count += 1
+				print_progress("  Last encoding {} {} [{} Done] [{} Skipped] [{} Weekend/Holiday]".format(itr_ticker, itr_date, _done_count, _skip_count, _err_count))
+
+
+		## load all label data and feature contexts for batch loading
+		_tickers, _dates, _labels = scenarioc.prepare_problemspace(_distinct_tickers, timespan, bins)
+
+		## We'll still want the train data. We'll use it to find the mean and std. deviation of the data.
+		_mask_train = (_dates > pd.to_datetime(trial.train_from)) & (_dates < pd.to_datetime(trial.train_until))
+		_mask_predict = pd.DataFrame([x for x in zip(_tickers, _dates)])
+		_mask_predict = _mask_predict.apply(lambda x: tuple(x) in _contexts, axis=1).values
+
+		_tickers_train = _tickers[_mask_train]
+		_dates_train = _dates[_mask_train]
+		_tickers_predict = _tickers[_mask_predict]
+		_dates_predict = _dates[_mask_predict]
+		print("Shapes: [TICKER {}] [DATES {}] [TICKER {}] [DATES {}]".format(_tickers_train.shape[0], _dates_train.shape[0], _tickers_predict.shape[0], _dates_predict.shape[0]))
+
+		print_progress("\n Creating model and loading weights")
+		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
+		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
+
+
+		print_progress("\n Finding Mean and Std. Deviation")
+		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
+
+		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
+
+		return y_preds
+
+
+
 
 	##################
 	## Status Files ##
@@ -845,33 +996,6 @@ class FinCapstone():
 	def load_scenarioc_labels(self, ticker, parseDate=True):
 		
 		return scenarioc.load_scenarioc_labels(ticker, parseDate)
-
-
-	#####################
-	## Verbose Helpers ##
-	#####################
-	def reset_verboseclock(self):
-		self._start = datetime.datetime.now()
-		self._step_i = self._start
-
-	def print_verbose_start(self):
-		self.reset_verboseclock()
-		print("| | START     - {}".format(str(self._start)))
-
-	def print_verbose(self, tag):
-		self._step_f = datetime.datetime.now()
-		print("\ / {} - {}".format(tag, str(self._step_f - self._step_i)))
-		self._step_i = self._step_f
-
-	def print_verbose_end(self):
-		self._step_f = datetime.datetime.now()
-		self._end = self._step_f
-		print(" V  END       - {} (TOOK {})".format(str(self._end), str(self._end - self._start)))
-
-def print_progress(str_output):
-	sys.stdout.write('\r')
-	sys.stdout.write(str_output)
-	sys.stdout.flush()
 
 
 def setup():
