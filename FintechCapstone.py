@@ -527,7 +527,7 @@ class FinCapstone():
 
 		return model
 
-	def evaluate_baseline(self, ticker, model=None):
+	def evaluate_baseline(self, ticker):
 		results = None
 		X_train = None
 		y_train = None
@@ -569,6 +569,8 @@ class FinCapstone():
 
 		print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}]".format(-1, test_eval["mse"], test_eval["r_squared"], test_eval["accuracy"]))
 		print("\n")
+
+		return model
 
 
 	def train_scenarioc(self, nb_epoch=100, useSample=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, earlystop=30, timespan=224, bins=100, finetune=None, dropout=0.0, optimizer="adam"):

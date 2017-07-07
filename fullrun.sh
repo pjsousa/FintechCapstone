@@ -123,10 +123,10 @@
 #STRIDE=(3)
 #BIN_SIZES=(20)
 
-ENCODE_SIZES=(40 60 100 224)
+ENCODE_SIZES=(224)
 SAMPLE=(20)
-STRIDE=(3 5 7)
-BIN_SIZES=(20 50 100)
+STRIDE=(3)
+BIN_SIZES=(20)
 TRIALS=(1 2 3 4 5)
 
 # ENCODE_SIZES=(40 60 100)
@@ -160,14 +160,24 @@ do
 				do
 					itr_earlystop=30
 
-					modelname="FullScenarioC_TRIAL${itr_trial}_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
+					#modelname="FullScenarioC_TRIAL${itr_trial}_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
 
-					cmd="./capstonecli --name $modelname --scenario scenarioc --fetch"
+					# cmd="./capstonecli --name $modelname --scenario scenarioc --fetch"
+					# eval $cmd
+					# cmd="./capstonecli --name $modelname --scenario scenarioc --fengineer"
+					# eval $cmd
+					# cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
+					# eval $cmd
+
+					modelname="FullBaseline_TRIAL${itr_trial}"
+
+					cmd="./capstonecli --name $modelname --scenario scenariob --fetch"
 					eval $cmd
-					cmd="./capstonecli --name $modelname --scenario scenarioc --fengineer"
+					cmd="./capstonecli --name $modelname --scenario scenariob --fengineer"
 					eval $cmd
-					cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --train"
+					cmd="./capstonecli --name $modelname --scenario scenariob --train"
 					eval $cmd
+
 				done
 			done
 		done
