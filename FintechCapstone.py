@@ -488,7 +488,7 @@ class FinCapstone():
 
 			print_progress("  Epoch {} - TRAINING ".format(itr_epoch))
 
-			baseline_model.fit(model, X_train, y_train, 2)
+			baseline_model.fit(model, X_train, y_train)
 
 			print_progress("  Epoch {} - EVAL. TRAIN ".format(itr_epoch))
 			train_eval = baseline_model.evaluate(model, X_train, y_train)
