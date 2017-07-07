@@ -737,7 +737,7 @@ class FinCapstone():
 		_distinct_dates.tolist()
 
 		print_progress("Force-Fetching necessary tickers\n")
-		initial_dataload(_distinct_tickers, force=True)
+		datafetch.initial_dataload(_distinct_tickers, force=True)
 
 		print_progress("Running Feature Engineering")
 		trial.feature_engineering(ticker_list=_distinct_tickers.tolist())
