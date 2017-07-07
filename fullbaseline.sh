@@ -46,8 +46,7 @@ do
 					cmd="./capstonecli --name $modelname --scenario baseline --fengineer"
 					eval $cmd
 
-					TICKER_SEQUENCE=`seq 106`
-					for itr_seq in TICKER_SEQUENCE
+					for itr_seq in $(seq 106)
 					do
 						cmd="./capstonecli --name $modelname --scenario baseline --train"
 						eval $cmd
