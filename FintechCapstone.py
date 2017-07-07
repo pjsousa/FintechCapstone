@@ -740,7 +740,7 @@ class FinCapstone():
 		datafetch.initial_dataload(_distinct_tickers, force=True)
 
 		print_progress("Running Feature Engineering")
-		trial.feature_engineering(ticker_list=_distinct_tickers.tolist())
+		self.feature_engineering(ticker_list=_distinct_tickers.tolist())
 
 
 		_skip_count = 0
@@ -757,7 +757,7 @@ class FinCapstone():
 				continue
 
 			## call encode
-			mtf = scenarioc.encode_features(itr_ticker, itr_date, bins, timespan, trial.model_name)
+			mtf = scenarioc.encode_features(itr_ticker, itr_date, bins, timespan, self.model_name)
 
 			scenarioc.store_scenarioc_encodings(mtf, itr_ticker, itr_date, timespan, bins)
 			_done_count += 1
@@ -768,7 +768,7 @@ class FinCapstone():
 		_tickers, _dates, _labels = scenarioc.prepare_problemspace(_distinct_tickers, timespan, bins)
 
 		## We'll still want the train data. We'll use it to find the mean and std. deviation of the data.
-		_mask_train = (_dates > pd.to_datetime(trial.train_from)) & (_dates < pd.to_datetime(trial.train_until))
+		_mask_train = (_dates > pd.to_datetime(self.train_from)) & (_dates < pd.to_datetime(self.train_until))
 		_mask_predict = pd.DataFrame([x for x in zip(_tickers, _dates)])
 		_mask_predict = _mask_predict.apply(lambda x: tuple(x) in _parsed_contexts, axis=1).values
 
@@ -780,7 +780,7 @@ class FinCapstone():
 
 		print_progress("\n Creating model and loading weights")
 		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
-		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, trial.scenario, finetune_path))
+		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
 
 
 		print_progress("\n Finding Mean and Std. Deviation")
