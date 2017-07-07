@@ -471,7 +471,7 @@ class FinCapstone():
 
 		X, y, X_test, y_test = baseline_model.prepare_problemspace(features_df, labels_df, self.train_from, self.train_until, self.test_from)
 
-		_mask_trainvalid = np.arange(X_train.shape[0])
+		_mask_trainvalid = np.arange(X.shape[0])
 		np.random.shuffle(_mask_trainvalid)
 
 		X_train = X[_mask_trainvalid[int(np.ceil(_mask_trainvalid.shape[0] * 0.2)):]]
