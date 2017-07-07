@@ -719,39 +719,18 @@ class FinCapstone():
 
 		self.store_status_files()
 
-		print_progress("  Epoch {} - [M, R, A] - T[{:.6f},{:.6f},{:.6f}]".format(-1, test_eval["mse"], test_eval["r_squared"], test_eval["accuracy"]))
+		print_progress("  Epoch {} - [M, R, A] - Tst[{:.6f},{:.6f},{:.6f}]".format(-1, test_eval["mse"], test_eval["r_squared"], test_eval["accuracy"]))
 		print("\n")
 
 		return model
 
 	def predict_scenarioc(self,finetune_path, tickers, dates, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
-		print_progress("Finding distinct tickers")
-		time.sleep(1)
-		print_progress("Force-Fetching necessary tickers")
-		time.sleep(1)
-		print_progress("Running Feature Engineering")
-		time.sleep(1)
-		print_progress("Encoding missing images")
-		time.sleep(1)
-		print_progress("Running Predict")
-		time.sleep(1)
+		_tickers_predict = tickers
+		_dates_predict = dates
 
 
-		_tickers_predict = ["NVDA","NFLX", "NVDA"]
-		_dates_predict = ["2017-03-03", "2017-03-03", "2017-03-06"]
-
-		input_shape=(224,224,3)
-		filter_shape=(3, 3)
-		output_size=3
-		FC_layers=4
-		timespan=224
-		bins=100
-		finetune_path=None
-		dropout=0.0
-		optimizer="adam"
-
-
-		_contexts = [tuple(x) for x in zip(_tickers_predict, pd.to_datetime(_dates_predict))]
+		_contexts = [tuple(x) for x in zip(_tickers_predict, _dates_predict)]
+		_parsed_contexts = [tuple(x) for x in zip(_tickers_predict, pd.to_datetime(_dates_predict))]
 		_distinct_tickers = np.unique(_tickers_predict)
 		_distinct_tickers.tolist()
 		_distinct_dates = pd.to_datetime(np.unique(_dates_predict))
@@ -768,20 +747,21 @@ class FinCapstone():
 		_done_count = 0
 		_err_count = 0
 
+
 		print_progress("Encoding missing images")
-		for itr_ticker, itr_date in zip(_tickers_predict, _dates_predict):
+		for itr_ticker, itr_date in _contexts:
 			## skips if we already created the image some other run
 			if scenarioc.check_encoding_exists(itr_ticker, itr_date, timespan, bins):
 				#print("File Exists. {} {}".format(itr[0], itr[1]))
 				_skip_count += 1
 				continue
 
-				## call encode
-				mtf = scenarioc.encode_features(itr_ticker, itr_date, bins, timespan, trial.model_name)
+			## call encode
+			mtf = scenarioc.encode_features(itr_ticker, itr_date, bins, timespan, trial.model_name)
 
-				scenarioc.store_scenarioc_encodings(mtf, itr_ticker, itr_date, timespan, bins)
-				_done_count += 1
-				print_progress("  Last encoding {} {} [{} Done] [{} Skipped] [{} Weekend/Holiday]".format(itr_ticker, itr_date, _done_count, _skip_count, _err_count))
+			scenarioc.store_scenarioc_encodings(mtf, itr_ticker, itr_date, timespan, bins)
+			_done_count += 1
+			print_progress(" Last encoding {} {} [{} Done] [{} Skipped] [{} Weekend/Holiday]".format(itr_ticker, itr_date, _done_count, _skip_count, _err_count))
 
 
 		## load all label data and feature contexts for batch loading
@@ -790,25 +770,25 @@ class FinCapstone():
 		## We'll still want the train data. We'll use it to find the mean and std. deviation of the data.
 		_mask_train = (_dates > pd.to_datetime(trial.train_from)) & (_dates < pd.to_datetime(trial.train_until))
 		_mask_predict = pd.DataFrame([x for x in zip(_tickers, _dates)])
-		_mask_predict = _mask_predict.apply(lambda x: tuple(x) in _contexts, axis=1).values
+		_mask_predict = _mask_predict.apply(lambda x: tuple(x) in _parsed_contexts, axis=1).values
 
 		_tickers_train = _tickers[_mask_train]
 		_dates_train = _dates[_mask_train]
 		_tickers_predict = _tickers[_mask_predict]
 		_dates_predict = _dates[_mask_predict]
-		print("Shapes: [TICKER {}] [DATES {}] [TICKER {}] [DATES {}]".format(_tickers_train.shape[0], _dates_train.shape[0], _tickers_predict.shape[0], _dates_predict.shape[0]))
+		print("\n Shapes: [TICKER {}] [DATES {}] [TICKER {}] [DATES {}]".format(_tickers_train.shape[0], _dates_train.shape[0], _tickers_predict.shape[0], _dates_predict.shape[0]))
 
 		print_progress("\n Creating model and loading weights")
 		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
-		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
+		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, trial.scenario, finetune_path))
 
 
 		print_progress("\n Finding Mean and Std. Deviation")
-		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, _labels, timespan, bins)
+		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, None, timespan, bins)
 
 		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
 
-		return y_preds
+		y_preds
 
 
 
