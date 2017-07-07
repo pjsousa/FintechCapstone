@@ -788,8 +788,7 @@ class FinCapstone():
 
 		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
 
-		y_preds
-
+		return y_preds
 
 
 
