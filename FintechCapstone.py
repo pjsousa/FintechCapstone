@@ -483,9 +483,8 @@ class FinCapstone():
 
 		model = baseline_model.create_model()
 
-		for step_idx in np.arange(nb_epoch / 2):
+		for itr_epoch in np.arange(nb_epoch):
 			_start = datetime.datetime.now()
-			itr_epoch = int(((step_idx*2)+2))
 
 			print_progress("  Epoch {} - TRAINING ".format(itr_epoch))
 

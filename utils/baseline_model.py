@@ -117,11 +117,11 @@ def create_model():
 	model.compile(loss='mean_squared_error', optimizer='adam')
 	return model
 
-def fit(model, X_train, y_train, nb_epoch=1):
+def fit(model, X_train, y_train):
 	"""
 	"""
 
-	model.fit(X_train, y_train, epochs=nb_epoch, batch_size=128, verbose=1)
+	model.fit(X_train, y_train, epochs=1, batch_size=64, verbose=0)
 
 	return model
 
@@ -134,7 +134,7 @@ def evaluate(model, X_test, y_test):
 	gain_test = (y_test > 0.0) * 1.0
 	gain_pred = (y_pred > 0.0) * 1.0
 
-	_r["mse"] = mean_squared_error(y_true, y_pred)
+	_r["mse"] = mean_squared_error(y_test, y_pred)
 	_r["r_squared"] = r2_score(y_test, y_pred, multioutput = "uniform_average")
 	_r["accuracy"] = accuracy_score(gain_test, gain_pred)
 
