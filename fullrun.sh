@@ -171,11 +171,11 @@ do
 
 					modelname="FullBaseline_TRIAL${itr_trial}"
 
-					cmd="./capstonecli --name $modelname --scenario scenariob --fetch"
+					cmd="./capstonecli --name $modelname --scenario baseline --fetch"
 					eval $cmd
-					cmd="./capstonecli --name $modelname --scenario scenariob --fengineer"
+					cmd="./capstonecli --name $modelname --scenario baseline --fengineer"
 					eval $cmd
-					cmd="./capstonecli --name $modelname --scenario scenariob --train"
+					cmd="./capstonecli --name $modelname --scenario baseline --train"
 					eval $cmd
 
 				done
