@@ -15,11 +15,13 @@
 
 ### BINS 50, CHANGE ENCODE (224 already done)
 ENCODE_SIZES=(224)
-SAMPLE=(10 20 30 40 50 60 70 80 90 100)
+#SAMPLE=(10 20 30 40 50 60 70 80 90 100)
+SAMPLE=(20)
 STRIDE=(3)
 BIN_SIZES=(50)
 DROPOUT=(0.0)
-OPTIMIZER=("adam" "adagrad")
+#OPTIMIZER=("adam" "adagrad")
+OPTIMIZER=("adam")
 TRIALS=(99)
 
 itr_subsample=-1

@@ -37,7 +37,7 @@ do
 			do
 				for itr_trial in "${TRIALS[@]}"
 				do
-					itr_earlystop=30
+					itr_earlystop=100
 
 					modelname="FullBaseline_TRIAL${itr_trial}"
 
