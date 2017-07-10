@@ -312,7 +312,7 @@ def create_model(input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC
 
 	return model
 
-def finetune(model, output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
+def finetune(model, output_size=3, FC_layers=4, dropout=0.0, optimizer="adam"):
 	"""
 	Removes the top Fully Connected layers from a VGG model and adds back new ones.
 	The number of Fully Connected layers can be arbitratry.
@@ -332,8 +332,6 @@ def finetune(model, output_size=3, FC_layers=6, dropout=0.0, optimizer="adam"):
 
 	model.add(Dense(output_size, kernel_initializer='normal'))
 
-	#model.compile(loss='mean_squared_error', optimizer=RMSprop(lr=1e-4))
-	#model.compile(loss='mean_squared_error', optimizer="adagrad")
 	model.compile(loss='mean_squared_error', optimizer=optimizer)
 
 	return model
@@ -436,7 +434,7 @@ def train(model, dates, tickers, labels, timespan, bins, features_mean, features
 			X_batch = (X_batch - features_mean) / features_std
 
 			## Fit
-			model.fit(X_batch, y_batch, epochs=1, batch_size=32, verbose=0)
+			model.fit(X_batch, y_batch, epochs=1, batch_size=16, verbose=0)
 
 	except StopIteration:
 		v = None
