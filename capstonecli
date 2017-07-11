@@ -142,6 +142,36 @@ def exec_fencode(model_name, scenario, microtlist, work_page, useSample, size, b
 	#trial.train(train_next=1, nb_epoch=5)
 	trial.feature_encoding(work_page=work_page, useSample=useSample, timespan=size, bins=bins)
 
+def exec_eval(model_name, scenario, input_shape, filter_shape, output_size, FC_layers, size, bins, finetune, dropout, optimizer):
+	from FintechCapstone import FinCapstone
+
+	date_from = '2009-01-01'
+	date_to = '2017-03-01'
+	timespan = {
+		"short_term": [1, 5]
+		,"medium_term": [40]
+		,"long_term": [90]
+	}
+
+	if scenario is None:
+		scenario = "scenarioc"
+
+	_ticker_list = None
+
+	trial = FinCapstone(
+		scenario=scenario
+		, ticker_list = _ticker_list
+		, encode_workpages=7
+		, model_name=model_name
+		, ticker_list_samplesize=4000
+		, timespan=timespan
+		, date_from=date_from
+		, reset_status=False)
+
+	trial.evaluate(None, input_shape=input_shape, filter_shape=filter_shape, 
+				output_size=output_size, FC_layers=FC_layers, timespan=size, bins=bins, 
+				finetune_path=finetune, dropout=dropout, optimizer=optimizer)
+
 
 def exec_archive(model_name, scenario, archivname):
 	from FintechCapstone import FinCapstone
@@ -264,6 +294,21 @@ if __name__ == "__main__":
 		exec_training(args["name"], args["scenario"], args["microtlist"], _subsample
 						, _input_shape, _filtersize, _noutputs, _FCBlocks, _earlystop, _size
 						, _bins, _finetune, _dropout, _optimizer)
+
+	if args["evaluate"]:
+
+		_input_shape = (224, 224, 3) if args["size"] is None else (int(args["size"]), int(args["size"]), 3)
+		_size = 224 if args["size"] is None else int(args["size"])
+		_filtersize = (3, 3) if args["filtersize"] is None else (int(args["filtersize"]), int(args["filtersize"]))
+		_noutputs = 3 if args["noutputs"] is None else int(args["noutputs"])
+		_FCBlocks = 4 if args["FCBlocks"] is None else int(args["FCBlocks"])
+		_bins = 100 if args["bins"] is None else int(args["bins"])
+		_finetune = None if args["finetune"] is None else args["finetune"]
+		_dropout = 0.0 if args["dropout"] is None else float(args["dropout"])
+		_optimizer = "adam" if args["optimizer"] is None else args["optimizer"]
+
+		exec_eval(args["name"], args["scenario"], _input_shape, _filtersize, _noutputs
+						, _FCBlocks, _size, _bins, _finetune, _dropout, _optimizer)
 
 	if args["arch"]:
 		exec_archive(args["name"], args["scenario"], args["arch"])

@@ -16,13 +16,12 @@
 ### BINS 50, CHANGE ENCODE (224 already done)
 ENCODE_SIZES=(224)
 #SAMPLE=(10 20 30 40 50 60 70 80 90 100)
-SAMPLE=(20)
+SAMPLE=(20 40 50)
 STRIDE=(3)
 BIN_SIZES=(50)
 DROPOUT=(0.0)
-#OPTIMIZER=("adam" "adagrad")
-OPTIMIZER=("adam")
-TRIALS=(99)
+OPTIMIZER=("adam" "adagrad")
+TRIALS=(199)
 
 itr_subsample=-1
 itr_size=-1
@@ -48,17 +47,23 @@ do
 					do
 						for itr_trial in "${TRIALS[@]}"
 						do
-							itr_earlystop=30
+							itr_earlystop=100
+
+							itr_subsample_float=$(bc <<<"scale=1;${itr_subsample}/100")
 
 							modelname="FullScenarioC_TRIAL${itr_trial}_DROPOUT${itr_dropout}_OPT${itr_optimizer}_ENCODE${itr_size}_BIN${itr_bin}_STRIDE${itr_stride}_EARLYSTOP${itr_earlystop}_SAMPLE${itr_subsample}"
 							weightsfilemask="FullScenarioC_TRIAL5_ENCODE224_BIN50_STRIDE3_EARLYSTOP30_SAMPLE20_0.2"
+							
+							weightsfilemask="FullScenarioC_TRIAL5_DROPOUT${itr_dropout}_OPT${itr_optimizer}_ENCODE224_BIN50_STRIDE3_EARLYSTOP30_SAMPLE${itr_subsample}_0${itr_subsample_float}"
+							#weightsfilemask="FullScenarioC_TRIAL${itr_trial}_DROPOUT${itr_dropout}_OPT${itr_optimizer}_ENCODE224_BIN50_STRIDE3_EARLYSTOP30_SAMPLE${itr_subsample}_${itr_subsample_float}"
+							
 
 							cmd="./capstonecli --name $modelname --scenario scenarioc --fetch"
 							eval $cmd
 							cmd="./capstonecli --name $modelname --scenario scenarioc --fengineer"
 							eval $cmd
 
-							cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop 30 --finetune $weightsfilemask --dropout $itr_dropout --optimizer $itr_optimizer --train"
+							cmd="./capstonecli --name $modelname --scenario scenarioc --bins $itr_bin --size $itr_size --filtersize $itr_stride --subsample $itr_subsample --earlystop $itr_earlystop --finetune $weightsfilemask --dropout $itr_dropout --optimizer $itr_optimizer --train"
 							eval $cmd
 						done
 					done

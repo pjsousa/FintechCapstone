@@ -379,7 +379,7 @@ class FinCapstone():
 		self.store_status_files()
 
 
-	def evaluate(self, train_next=None, ticker=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, finetune_path=None, dropout=0.0, optimizer="adam"):
+	def evaluate(self, ticker=None, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, finetune_path=None, dropout=0.0, optimizer="adam"):
 		"""
 		Loads and evaluates a model against our test data.
 		"""
@@ -391,52 +391,40 @@ class FinCapstone():
 
 		if not(ticker is None):
 			work_tickers = [ticker]
-			train_next = 1
 		else:
 			work_tickers = self.eval_status_df[self.eval_status_df["status"] == "INCOMPLETE"].index.tolist()
 
+		try:
+			_start = datetime.datetime.now()
 
-		if (ticker is None) and (train_next is None):
-			train_next = len(work_tickers)
+			if self.scenario == "baseline":
+				all_tickers = self.valid_ticker_list()
 
+				## During evaluation we'll store the ticker's result in index key (ticker, -1), that is what we are looking for in this line
+				_tickers_stillmissing = [(x, -1) not in self.eval_status_df.index for x in self.valid_ticker_list()]
 
-		if self.scenario == "baseline":
-			print("EVAL BA model for %s tickers" % n_tickers)
-			model = baseline_model.create_model()
-		elif self.scenario == "scenarioc":
-			n_tickers = len(self.valid_ticker_list())
-			print("EVAL SA model for %s tickers" % n_tickers)
-			model = scenariob.create_model(input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, timespan=timespan, bins=bins, finetune_path=finetune_path, dropout=dropout, optimizer=optimizer)
+				## we then mask all the tickers with the _tickers_stillmissing that still don't have a (ticker, -1) entry
+				work_tickers = list(itertools.compress(all_tickers, _tickers_stillmissing))
 
-		for idx_ticker in range(train_next):
-			itr_ticker = work_tickers[idx_ticker]
-			try:
-				_start = datetime.datetime.now()
+				if len(work_tickers) > 0:
+					itr_ticker = work_tickers[0]
+				
+					evals = self.evaluate_baseline(itr_ticker)
+			elif self.scenario == "scenarioc":
+				itr_ticker = None
+				evals = self.evaluate_scenarioc(finetune_path, input_shape=input_shape, filter_shape=filter_shape, output_size=output_size, FC_layers=FC_layers, timespan=timespan, bins=bins, dropout=dropout, optimizer=optimizer)
 
-				if self.scenario == "baseline":
-					evals = self.evaluate_baseline(itr_ticker, model)
-				elif self.scenario == "scenarioa":
-					evals = self.evaluate_scenarioa(itr_ticker, model)
-				elif self.scenario == "scenariob":
-					evals = self.evaluate_scenariob(itr_ticker, model)
+		except Exception as e:
+			self.eval_status_df.loc[(itr_ticker, -1), "status"] = "NOK"
+			self.eval_status_df.loc[(itr_ticker, -1), "epochs"] = None
+			self.eval_status_df.loc[(itr_ticker, -1), "start"] = _start
+			self.eval_status_df.loc[(itr_ticker, -1), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[(itr_ticker, -1), "r_squared"] = None
+			self.eval_status_df.loc[(itr_ticker, -1), "accuracy"] = None
+			self.eval_status_df.loc[(itr_ticker, -1), "msg"] = str(e)
 
-				self.eval_status_df.loc[itr_ticker, "status"] = "OK"
-				self.eval_status_df.loc[itr_ticker, "epochs"] = self.train_status_df.loc[itr_ticker, "epochs"]
-				self.eval_status_df.loc[itr_ticker, "start"] = _start
-				self.eval_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
-				self.eval_status_df.loc[itr_ticker, "r_squared"] = evals["r_squared"]
-				self.eval_status_df.loc[itr_ticker, "accuracy"] = evals["accuracy"]
-			except Exception as e:
-				self.eval_status_df.loc[itr_ticker, "status"] = "NOK"
-				self.eval_status_df.loc[itr_ticker, "epochs"] = None
-				self.eval_status_df.loc[itr_ticker, "start"] = _start
-				self.eval_status_df.loc[itr_ticker, "end"] = datetime.datetime.now()
-				self.eval_status_df.loc[itr_ticker, "r_squared"] = None
-				self.eval_status_df.loc[itr_ticker, "accuracy"] = None
-				self.eval_status_df.loc[itr_ticker, "msg"] = str(e)
-
-				self.store_status_files()
-				iserror = True
+			self.store_status_files()
+			iserror = True
 
 		if len(work_tickers) == 0:
 			self.trialconfig_df.loc["modeleval_status", "value"] = "ERRORS" if iserror else "DONE"
@@ -495,17 +483,18 @@ class FinCapstone():
 			print_progress("  Epoch {} - EVAL. VALID ".format(itr_epoch))
 			valid_eval = baseline_model.evaluate(model, X_valid, y_valid)
 
-			self.eval_status_df.loc[("Nan", itr_epoch), "status"] = "COMPLETE"
-			self.eval_status_df.loc[("Nan", itr_epoch), "start"] = _start
-			self.eval_status_df.loc[("Nan", itr_epoch), "end"] = datetime.datetime.now()
-			self.eval_status_df.loc[("Nan", itr_epoch), "mse"] = train_eval["mse"]
-			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared"] = train_eval["r_squared"]
-			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy"] = train_eval["accuracy"]
-			self.eval_status_df.loc[("Nan", itr_epoch), "mse_test"] = valid_eval["mse"]
-			self.eval_status_df.loc[("Nan", itr_epoch), "r_squared_test"] = valid_eval["r_squared"]
-			self.eval_status_df.loc[("Nan", itr_epoch), "accuracy_test"] = valid_eval["accuracy"]
+			self.eval_status_df.loc[(ticker, itr_epoch), "status"] = "COMPLETE"
+			self.eval_status_df.loc[(ticker, itr_epoch), "start"] = _start
+			self.eval_status_df.loc[(ticker, itr_epoch), "end"] = datetime.datetime.now()
+			self.eval_status_df.loc[(ticker, itr_epoch), "mse"] = train_eval["mse"]
+			self.eval_status_df.loc[(ticker, itr_epoch), "r_squared"] = train_eval["r_squared"]
+			self.eval_status_df.loc[(ticker, itr_epoch), "accuracy"] = train_eval["accuracy"]
+			self.eval_status_df.loc[(ticker, itr_epoch), "mse_test"] = valid_eval["mse"]
+			self.eval_status_df.loc[(ticker, itr_epoch), "r_squared_test"] = valid_eval["r_squared"]
+			self.eval_status_df.loc[(ticker, itr_epoch), "accuracy_test"] = valid_eval["accuracy"]
 
 			self.store_status_files()
+
 
 			if best_epoch is None:
 				best_epoch = [itr_epoch, valid_eval["r_squared"]]
@@ -535,7 +524,7 @@ class FinCapstone():
 		y_test = None
 		best_epoch = None
 
-		print("Training Baseline for {}, {}".format(ticker, -1))
+		print("Evaluating Baseline for {}, {}".format(ticker, -1))
 
 		## Loading dataset for ticker
 		features_df = self.load_baseline_features(ticker, parseDate=True)
@@ -549,21 +538,24 @@ class FinCapstone():
 		print("Shapes: [X {}Tst] [y {}Tst]".format(X_test.shape[0], y_test.shape[0]))
 		print_progress("\n Creating model and loading weights")
 		model = baseline_model.create_model()
-		model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+		try:
+			model.load_weights("{}/weights{}_{}_{}.h5".format(paths.TEMP_PATH, self.scenario, self.model_name, ticker))
+		except:
+			print_progress("Weights file not found.")
 
 		_start = datetime.datetime.now()
 		print_progress("  Epoch {} - EVAL. TEST ".format(-1))
 		test_eval = baseline_model.evaluate(model, X_test, y_test)
 
-		self.eval_status_df.loc[("Nan", -1), "status"] = "COMPLETE"
-		self.eval_status_df.loc[("Nan", -1), "start"] = _start
-		self.eval_status_df.loc[("Nan", -1), "end"] = datetime.datetime.now()
-		self.eval_status_df.loc[("Nan", -1), "mse"] = None
-		self.eval_status_df.loc[("Nan", -1), "r_squared"] = None
-		self.eval_status_df.loc[("Nan", -1), "accuracy"] = None
-		self.eval_status_df.loc[("Nan", -1), "mse_test"] = test_eval["mse"]
-		self.eval_status_df.loc[("Nan", -1), "r_squared_test"] = test_eval["r_squared"]
-		self.eval_status_df.loc[("Nan", -1), "accuracy_test"] = test_eval["accuracy"]
+		self.eval_status_df.loc[(ticker, -1), "status"] = "COMPLETE"
+		self.eval_status_df.loc[(ticker, -1), "start"] = _start
+		self.eval_status_df.loc[(ticker, -1), "end"] = datetime.datetime.now()
+		self.eval_status_df.loc[(ticker, -1), "mse"] = None
+		self.eval_status_df.loc[(ticker, -1), "r_squared"] = None
+		self.eval_status_df.loc[(ticker, -1), "accuracy"] = None
+		self.eval_status_df.loc[(ticker, -1), "mse_test"] = test_eval["mse"]
+		self.eval_status_df.loc[(ticker, -1), "r_squared_test"] = test_eval["r_squared"]
+		self.eval_status_df.loc[(ticker, -1), "accuracy_test"] = test_eval["accuracy"]
 
 		self.store_status_files()
 
