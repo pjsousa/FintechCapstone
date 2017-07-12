@@ -131,7 +131,7 @@ def markov_transition_matrix(serie, n_states, min_val, max_val):
 
 def markov_transition_field(serie, n_states, min_val, max_val):
 	"""
-	Creates a Markov Transition Field (MTF) as proposed in https://arxiv.org/pdf/1506.00327.pdf by WANG Z. and OATES T.
+	Creates a our "Markov Transition Field" (MTF) inspired by https://arxiv.org/pdf/1506.00327.pdf by WANG Z. and OATES T.
 	The resulting MTF will be of the same size as "serie". Any slicing must be done priorly.
 	"""
 
