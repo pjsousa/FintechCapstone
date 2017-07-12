@@ -441,7 +441,7 @@ def train(model, dates, tickers, labels, timespan, bins, features_mean, features
 	
 	return model
 
-def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, features_std):
+def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, features_std, evaluate_only=None):
 	"""
 	Evaluates our model in terms of Loss, R^2 and accuracy.
 	The Accuracy is based on a discretization of the labels in GAIN/LOSS [1/0] done on the fly in thist method just just evaluation purposes.
@@ -477,6 +477,12 @@ def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, featu
 
 	gain_true = (y_true > 0.0) * 1.0
 	gain_pred = (y_pred > 0.0) * 1.0
+
+	if evaluate_only is not None:
+		y_true = y_true[:, evaluate_only]
+		y_pred = y_pred[:, evaluate_only]
+		gain_true = gain_true[:, evaluate_only]
+		gain_pred = gain_pred[:, evaluate_only]
 
 	_r["mse"] = mean_squared_error(y_true, y_pred)
 	_r["r_squared"] = r2_score(y_true, y_pred, multioutput = "uniform_average")
