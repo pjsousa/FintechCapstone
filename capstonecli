@@ -1,5 +1,6 @@
-#!/home/pedro/anaconda3/bin/python
+#!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 import argparse
 import sys
 
@@ -218,7 +219,7 @@ if __name__ == "__main__":
 	ap.add_argument("--train", required=False, help="Execute a training session.", action="store_true")
 	ap.add_argument("--evaluate", required=False, help="Execute an evaluation session.", action="store_true")
 	ap.add_argument("--fencode", required=False, help="Perform feature encoding on the specified block.")
-	ap.add_argument("--name", required=True, help="The model name.")
+	ap.add_argument("--name", required=False, help="The model name.")
 	ap.add_argument("--scenario", required=False, help="The scenario to use.")
 	ap.add_argument("--subsample", required=False, help="The subsampling probability [0 - 100]")
 	ap.add_argument("--size", required=False, help="The image side size for the mtf encoding. Used in --fencode and --train")
@@ -236,23 +237,36 @@ if __name__ == "__main__":
 	args = None
 	try:
 		args = vars(ap.parse_args())
-	except:
+	except Exception as e:
 		ap.print_help()
 		print("Examples: ")
 		print("Calling a fetch session:")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --fetch")
+		print("./capstonecli --name TestModel --scenario scenarioc --fetch")
 		print("\n\nCalling a feature engineering session:")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --fengineer")
+		print("./capstonecli --name TestModel --scenario scenarioc --fengineer")
 		print("\n\nCalling a feature encoding session to run the first 'page' and subsampling half of the images")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 50 --fencode 0")
+		print("./capstonecli --name TestModel --scenario scenarioc --subsample 50 --fencode 0")
 		print("\n\nAlso calling a feature encoding session but creating 120x120 images and 60 bins for the timeseries quantization.")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --size 100 --bins 60 --fencode 0")
+		print("./capstonecli --name TestModel --scenario scenarioc --size 120 --bins 60 --fencode 0")
 		print("\n\Calling a training session.")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --train")
+		print("./capstonecli --name TestModel --scenario scenarioc --train")
 		print("\n\Calling a training session that also uses a sample of the images in disk.")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --subsample 50 --train")
+		print("./capstonecli --name TestModel --scenario scenarioc --subsample 50 --train")
 		print("\n\Calling a training session and overriding the model dimensions.")
-		print("./capstonecli --name FullScenarioC --scenario scenarioc --size 100 --filtersize 5 --noutputs 1 --FCBlocks 2 --train")
+		print("./capstonecli --name TestModel --scenario scenarioc --size 100 --filtersize 5 --noutputs 1 --FCBlocks 2 --train")
+		
+
+# ./capstonecli --setup
+# ./capstonecli --name TestModelPY27 --scenario scenarioc --fetch
+# ./capstonecli --name TestModelPY27 --scenario scenarioc --fengineer
+# ./capstonecli --name TestModelPY27 --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 0
+# ./capstonecli --name TestModelPY27 --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 1
+# ./capstonecli --name TestModelPY27 --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 2
+# ./capstonecli --name TestModelPY27 --scenario scenarioc --bins 100 --size 40 --filtersize 3 --subsample 50 --earlystop 5 --train
+# ./capstonecli --name TestModelPY27 --scenario scenarioc --bins 100 --size 40 --filtersize 3 --finetune TestModelPY27_0.5  --evaluate
+
+
+	print(sys.executable)
 
 	if args is None:
 		sys.exit()
