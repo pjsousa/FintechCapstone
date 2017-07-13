@@ -111,7 +111,7 @@ def create_model():
 	
 	#output
 	#model.add(Dense(4, kernel_initializer='normal', activation="sigmoid"))
-	model.add(Dense(4, kernel_initializer='normal'))
+	model.add(Dense(3, kernel_initializer='normal'))
 	# Compile model
 	#model.compile(loss='binary_crossentropy', optimizer='adam', metrics=["accuracy"])
 	model.compile(loss='mean_squared_error', optimizer='adam')
