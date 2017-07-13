@@ -48,7 +48,7 @@ def calc_features(raw_df, verbose=True):
 
 
 
-def calc_labels(raw_df, timespan, verbose=True):
+def calc_labels(raw_df, timespan=[1, 30, 60], verbose=True):
 	"""
 	"""
 	result_df = None
@@ -57,11 +57,11 @@ def calc_labels(raw_df, timespan, verbose=True):
 	result_df = pd.DataFrame()
 	result_df["Date"] = raw_df["Date"]
 
-	for tp in timespan:
-		for t in timespan[tp]:
-			col_name = "RETURN_{}".format(t)
-			result_df[col_name] = ((raw_df["Close"] / raw_df["Close"].shift(t)) - 1)
-			result_df[col_name] = result_df[col_name].shift(-t)
+	
+	for t in timespan:
+		col_name = "RETURN_{}".format(t)
+		result_df[col_name] = ((raw_df["Close"] / raw_df["Close"].shift(t)) - 1)
+		result_df[col_name] = result_df[col_name].shift(-t)
 
 
 	return result_df
@@ -136,6 +136,6 @@ def evaluate(model, X_test, y_test):
 
 	_r["mse"] = mean_squared_error(y_test, y_pred)
 	_r["r_squared"] = r2_score(y_test, y_pred, multioutput = "uniform_average")
-	_r["accuracy"] = accuracy_score(gain_test, gain_pred)
+	_r["accuracy"] = accuracy_score(gain_test.flatten(), gain_pred.flatten())
 
 	return _r

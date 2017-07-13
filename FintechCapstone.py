@@ -176,11 +176,11 @@ class FinCapstone():
 				## Calculate depending on scenario and store
 				if scenario == "baseline":
 					print_progress("  ({}/{}) - Calculating Features {}".format(itr_count, ticker_count, itr_ticker))
-					work_df = baseline_model.calc_features(itr_df,verbose=True)
+					work_df = baseline_model.calc_features(itr_df, verbose=True)
 					self.store_baseline_features(work_df, itr_ticker)
 
 					print_progress("  ({}/{}) - Calculating Labels {}".format(itr_count, ticker_count, itr_ticker))
-					work_df = baseline_model.calc_labels(itr_df, self.timespan, verbose=True)
+					work_df = baseline_model.calc_labels(itr_df, verbose=True)
 					self.store_baseline_labels(work_df, itr_ticker)
 				elif scenario == "scenarioc":
 					print_progress("  ({}/{}) - Calculating Features {}".format(itr_count, ticker_count, itr_ticker))

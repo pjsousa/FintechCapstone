@@ -485,8 +485,9 @@ def evaluate(model, dates, tickers, labels, timespan, bins, features_mean, featu
 		gain_pred = gain_pred[:, evaluate_only]
 
 	_r["mse"] = mean_squared_error(y_true, y_pred)
-	_r["r_squared"] = r2_score(y_true, y_pred, multioutput = "uniform_average")
-	_r["accuracy"] = accuracy_score(gain_true, gain_pred)
+	_r["r_squared"] = r2_score(y_true, y_pred, multioutput="uniform_average")
+	## accuracy_score expects a 1D array, which is why we flatten the labels
+	_r["accuracy"] = accuracy_score(gain_true.flatten(), gain_pred.flatten())
 
 	return _r
 
