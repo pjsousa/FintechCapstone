@@ -734,11 +734,9 @@ class FinCapstone():
 		print_progress("Running Feature Engineering")
 		self.feature_engineering(ticker_list=_distinct_tickers.tolist())
 
-
 		_skip_count = 0
 		_done_count = 0
 		_err_count = 0
-
 
 		print_progress("Encoding missing images")
 		for itr_ticker, itr_date in _contexts:
@@ -780,7 +778,7 @@ class FinCapstone():
 
 		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
 
-		return y_preds
+		return _tickers_predict, _dates_predict, y_preds
 
 
 
