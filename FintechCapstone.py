@@ -601,7 +601,6 @@ class FinCapstone():
 		_dates_valid = _dates[_mask_trainvalid[:int(np.ceil(_mask_trainvalid.shape[0] * 0.2))]]
 
 		print("Shapes: [TICKER {}T {}V] [DATES {}T {}V]".format(_tickers_train.shape[0], _tickers_valid.shape[0], _dates_train.shape[0], _dates_valid.shape[0]))
-		
 
 		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
 
