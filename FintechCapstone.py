@@ -720,7 +720,6 @@ class FinCapstone():
 		finetune_paths = finetune_paths.split("|")
 		_tickers_predict = tickers
 		_dates_predict = dates
-		y_preds = None
 		_r = []
 
 		_contexts = [tuple(x) for x in zip(_tickers_predict, _dates_predict)]
