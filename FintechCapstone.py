@@ -9,6 +9,7 @@ import itertools
 from functools import partial
 from dateutil import parser as dtparser
 from sklearn.externals import joblib
+from pandas.tseries.offsets import BDay
 
 
 from utils import datafetch
@@ -806,6 +807,15 @@ class FinCapstone():
 			_values.append(itr_df[itr_df["Date"] == row["Date"]]["Close"].iloc[0])
 
 		_r["Close"] = _values
+
+
+		_r["Close_1"] = _r["Close"] * _r["RETURN_1"]
+		_r["Close_30"] = _r["Close"] * _r["RETURN_30"]
+		_r["Close_60"] = _r["Close"] * _r["RETURN_60"]
+
+		_r["Date_1"] = _r["Date"] * BDay(1)
+		_r["Date_30"] = _r["Date"] * BDay(30)
+		_r["Date_60"] = _r["Date"] * BDay(60)
 
 		return _r
 
