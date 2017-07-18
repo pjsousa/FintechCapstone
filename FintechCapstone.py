@@ -794,6 +794,20 @@ class FinCapstone():
 		_r = _r.groupby(["Ticker", "Date"]).agg("mean")
 		_r.reset_index(inplace=True)
 
+		# Lets load the raw features so we can add Close price. This way its easier to present prediction for price and return.
+		features_dfs = dict()
+		for itr_ticker in _r["Ticker"].unique():
+			features_dfs[itr_ticker] = self.load_scenarioc_features(itr_ticker, True)
+
+		_r = []
+		for idx, row in _r.iterrows():
+			itr_df = features_dfs[row["Ticker"]]
+			_r.append(itr_df[itr_df["Date"] == row["Date"]]["Close"].iloc[0])
+
+		_r["Close"] = _r
+		_r
+
+
 		return _r
 
 
