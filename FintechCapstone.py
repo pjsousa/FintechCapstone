@@ -800,7 +800,8 @@ class FinCapstone():
 			features_dfs[itr_ticker] = self.load_scenarioc_features(itr_ticker, True)
 
 		_r = []
-		for idx, row in _r.iterrows():
+		for idx in range(_r.shape[0]):
+			row = _r.iloc[idx]
 			itr_df = features_dfs[row["Ticker"]]
 			_r.append(itr_df[itr_df["Date"] == row["Date"]]["Close"].iloc[0])
 
