@@ -778,7 +778,8 @@ class FinCapstone():
 
 		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
 
-		return _tickers_predict, _dates_predict, y_preds
+		_r = pd.DataFrame(np.concatenate([np.expand_dims(_tickers_predict, 1), np.expand_dims(_dates_predict, 1), y_preds], axis=1), columns=["Ticker", "Date", "RETURN_1", "RETURN_30", "RETURN_60"])
+		return _r
 
 
 
