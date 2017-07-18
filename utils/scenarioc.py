@@ -41,6 +41,8 @@ from keras.metrics import binary_accuracy
 from keras.wrappers.scikit_learn import KerasRegressor
 from keras.optimizers import SGD, RMSprop, Adam
 
+import hashlib
+
 
 TINY_FLOAT = 1e-10
 
@@ -177,6 +179,8 @@ def encode_features(ticker, itr_date, n_states, timespan, modelname):
 			_result.append(mtf.values)
 
 		_result = np.array(_result)
+
+		## well reshape this so it fits into the tensors
 		_result = _result.reshape(_result.shape[1],_result.shape[2],_result.shape[0])
 	else:
 		_result = None
@@ -219,8 +223,6 @@ def calc_labels(raw_df, verbose=True):
 	result_df["RETURN_1"] = result_df["RETURN_1"].shift(-1)
 	result_df["RETURN_30"] = result_df["RETURN_30"].shift(-30)
 	result_df["RETURN_60"] = result_df["RETURN_60"].shift(-60)
-
-	result_df = np.around(result_df, 4)
 
 	result_df.where(~np.isnan(result_df), TINY_FLOAT, inplace=True)
 	result_df.where(-np.isinf(result_df), TINY_FLOAT, inplace=True)
@@ -353,15 +355,24 @@ def seq_data(dates, tickers, labels, timespan, bins):
 		X = load_scenarioc_encodings(_iter[1], datetime.date.strftime(_iter[0], "%Y-%m-%d"), timespan, bins)
 		if labels is not None:
 			y = labels[_iter[1]].loc[_iter[0]].values
+			
 		else:
-			y = None
+			y = np.array([])
 		
+		
+		
+
 		## when X.shape is an empty tuple, we don't yield and go to the next iteration
 		try:
 			if X.shape:
+				# print("Ticker {} - Date {} - X Data {} - y Data {}".format(
+				# 	_iter[1]
+				# 	, datetime.date.strftime(_iter[0], "%Y-%m-%d")
+				# 	, hashlib.sha1(X).hexdigest()
+				# 	, hashlib.sha1(y.copy(order='C')).hexdigest()))
 				yield X, y
 		except AttributeError:
-			print("scenarioc.seq_data - X came NoneType", _iter, "\n")
+			print("\n\nscenarioc.seq_data - X came NoneType", _iter, "\n\n")
 
 
 def seq_batch(dates, tickers, labels, timespan, bins, batch_size=32):
