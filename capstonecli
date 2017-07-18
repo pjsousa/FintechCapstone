@@ -208,8 +208,8 @@ def exec_predict(model_name, scenario, input_shape, filter_shape, output_size, F
 
 	print("Valid Tickers ", _tickers, _dates)
 
-	_dates = _dates[(_dates > trial.test_from) & (_dates < trial.test_until)]
-	_tickers = _tickers[(_dates > trial.test_from) & (_dates < trial.test_until)]
+	_dates = _dates[(_dates > trial.test_from)]
+	_tickers = _tickers[(_dates > trial.test_from)]
 
 	_dates = np.array([ x.strftime('%Y-%m-%d') for x in _dates])
 

@@ -809,13 +809,13 @@ class FinCapstone():
 		_r["Close"] = _values
 
 
-		_r["Close_1"] = _r["Close"] * _r["RETURN_1"]
-		_r["Close_30"] = _r["Close"] * _r["RETURN_30"]
-		_r["Close_60"] = _r["Close"] * _r["RETURN_60"]
+		_r["Close_1"] = _r["Close"] * (1.0 + _r["RETURN_1"])
+		_r["Close_30"] = _r["Close"] * (1.0 + _r["RETURN_30"])
+		_r["Close_60"] = _r["Close"] * (1.0 + _r["RETURN_60"])
 
-		_r["Date_1"] = _r["Date"] * BDay(1)
-		_r["Date_30"] = _r["Date"] * BDay(30)
-		_r["Date_60"] = _r["Date"] * BDay(60)
+		_r["Date_1"] = _r["Date"] + BDay(1)
+		_r["Date_30"] = _r["Date"] + BDay(30)
+		_r["Date_60"] = _r["Date"] + BDay(60)
 
 		return _r
 
