@@ -4,6 +4,8 @@ from __future__ import division
 import argparse
 import sys
 from utils import scenarioc
+import numpy as np
+import pandas as pd
 
 
 def dump_setup(args):
@@ -200,7 +202,11 @@ def exec_predict(model_name, scenario, input_shape, filter_shape, output_size, F
 		, date_from=date_from
 		, reset_status=False)
 
+
+
 	_tickers, _dates, _labels = scenarioc.prepare_problemspace(trial.valid_ticker_list(), size, bins)
+
+	print("Valid Tickers ", _tickers, _dates)
 
 	_dates = _dates[(_dates > trial.test_from) & (_dates < trial.test_until)]
 	_tickers = _tickers[(_dates > trial.test_from) & (_dates < trial.test_until)]
@@ -211,7 +217,7 @@ def exec_predict(model_name, scenario, input_shape, filter_shape, output_size, F
 				output_size=output_size, FC_layers=FC_layers, timespan=size, bins=bins, 
 				dropout=dropout, optimizer=optimizer)
 
-	_r.to_csv("predictions_{}.csv", index=None)
+	_r.to_csv("predictions_{}.csv".format(model_name), index=None)
 
 
 def exec_archive(model_name, scenario, archivname):
@@ -242,13 +248,6 @@ def exec_archive(model_name, scenario, archivname):
 
 
 
-"""
-python capstone.py --setup
-python capstone.py --dump-config scenarioc
-python capstone.py --config scenarioc
-"""
-
-
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser()
 
@@ -274,7 +273,7 @@ if __name__ == "__main__":
 	ap.add_argument("--finetune", required=False, help="Filename of weights to preload the model to finetune")
 	ap.add_argument("--dropout", required=False, help="Dropout probabilities to add between the fully connected layers")
 	ap.add_argument("--optimizer", required=False, help="Optimizer to use in finetuning")
-	ap.add_argument("--predict", required=False, help="Generates a predictions file to use in the Web App")
+	ap.add_argument("--predict", required=False, help="Generates a predictions file to use in the Web App", action="store_true")
 
 
 	args = None
