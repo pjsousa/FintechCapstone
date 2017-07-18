@@ -716,10 +716,12 @@ class FinCapstone():
 
 		return model
 
-	def predict_scenarioc(self,finetune_path, tickers, dates, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
+	def predict_scenarioc(self,finetune_paths, tickers, dates, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
+		finetune_paths = finetune_paths.split("|")
 		_tickers_predict = tickers
 		_dates_predict = dates
-
+		y_preds = None
+		_r = []
 
 		_contexts = [tuple(x) for x in zip(_tickers_predict, _dates_predict)]
 		_parsed_contexts = [tuple(x) for x in zip(_tickers_predict, pd.to_datetime(_dates_predict))]
@@ -768,17 +770,31 @@ class FinCapstone():
 		_dates_predict = _dates[_mask_predict]
 		print("\n Shapes: [TICKER {}] [DATES {}] [TICKER {}] [DATES {}]".format(_tickers_train.shape[0], _dates_train.shape[0], _tickers_predict.shape[0], _dates_predict.shape[0]))
 
-		print_progress("\n Creating model and loading weights")
-		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
-		model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, finetune_path))
-
-
 		print_progress("\n Finding Mean and Std. Deviation")
 		feature_mean, feature_std = scenarioc.features_stats(_dates_train, _tickers_train, None, timespan, bins)
 
-		y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
+		print_progress("Creating model")
+		model = scenarioc.create_model(input_shape, filter_shape, output_size, FC_layers)
+		
+		for itr_path in finetune_paths:
+			print_progress("Loading weights {}".format(itr_path))
+			model.load_weights("{}/weights{}_{}.h5".format(paths.TEMP_PATH, self.scenario, itr_path))
+			print_progress("Predicting with {}".format(itr_path))
+			
+			y_preds = scenarioc.predict(model, _dates_predict, _tickers_predict, timespan, bins, feature_mean, feature_std)
+			y_preds = pd.DataFrame(np.concatenate([np.expand_dims(_tickers_predict, 1), np.expand_dims(_dates_predict, 1), y_preds], axis=1), columns=["Ticker", "Date", "RETURN_1", "RETURN_30", "RETURN_60"])
+			y_preds["path"] = itr_path
+			_r.append(y_preds)
 
-		_r = pd.DataFrame(np.concatenate([np.expand_dims(_tickers_predict, 1), np.expand_dims(_dates_predict, 1), y_preds], axis=1), columns=["Ticker", "Date", "RETURN_1", "RETURN_30", "RETURN_60"])
+		# Now we want to concatenate all the results and average them.
+		_r = pd.concat(_r, ignore_index=True)
+		_r["Date"] = pd.to_datetime(_r["Date"])
+		_r["RETURN_1"] = pd.to_numeric(_r["RETURN_1"])
+		_r["RETURN_30"] = pd.to_numeric(_r["RETURN_30"])
+		_r["RETURN_60"] = pd.to_numeric(_r["RETURN_60"])
+		_r = _r.groupby(["Ticker", "Date"]).agg("mean")
+		_r.reset_index(inplace=True)
+
 		return _r
 
 
