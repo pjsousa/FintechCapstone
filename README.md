@@ -5,7 +5,7 @@ This is my Capstone Project for my Udacity's [Machine Learning Nanodegree](https
 The main focus of the capstone was to create a Nasdaq100 predictor. We used Deep Learning with Computer Vision architectures.
 
 This repository is the main source for the model building.
-We also built a web application the repository for which can be found [here](https://github.com/pjsousa/FintechCapstoneWeb).
+We also built a small [web application](https://capstone.pjsousa.com) to browse some of our predictions. The repository for which can be found [here](https://github.com/pjsousa/FintechCapstoneWeb).
 
 
 ## Installing our project
