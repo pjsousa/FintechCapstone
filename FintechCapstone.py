@@ -716,7 +716,7 @@ class FinCapstone():
 
 		return model
 
-	def predict_scenarioc(self,finetune_paths, tickers, dates, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam"):
+	def predict_scenarioc(self,finetune_paths, tickers, dates, input_shape=(224,224,3), filter_shape=(3, 3), output_size=3, FC_layers=4, timespan=224, bins=100, dropout=0.0, optimizer="adam", skip_encode=False):
 		finetune_paths = finetune_paths.split("|")
 		_tickers_predict = tickers
 		_dates_predict = dates
@@ -742,7 +742,7 @@ class FinCapstone():
 		print_progress("Encoding missing images")
 		for itr_ticker, itr_date in _contexts:
 			## skips if we already created the image some other run
-			if scenarioc.check_encoding_exists(itr_ticker, itr_date, timespan, bins):
+			if skip_encode or scenarioc.check_encoding_exists(itr_ticker, itr_date, timespan, bins):
 				#print("File Exists. {} {}".format(itr[0], itr[1]))
 				_skip_count += 1
 				continue
