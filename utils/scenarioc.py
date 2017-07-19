@@ -44,34 +44,6 @@ import hashlib
 
 TINY_FLOAT = 1e-10
 
-#
-#	in : 
-#		multiple technical indicators:
-#			simple moving average for 5, 30, 60 and 200 periods
-#			bollinger bands for 5, 30, 60 and 200 periods
-#			macd for 26/12 period
-#			rsi for 14, 21, 60 periods
-#			stochastic oscilator for 14 periods
-#			adx
-#			aroon indicator for 20 periods
-#			chaikin money flow for 21 periods
-#			on balance volume indicator
-#
-#	out :
-#		returns after multiple timespans
-#
-#	feature selection/reduction :
-#		none
-#
-#	model:
-#		????
-#
-#	eval:
-#		accuracy on loss/gain prediction
-#
-#
-#       https://www.aaai.org/ocs/index.php/WS/AAAIW15/paper/viewFile/10179/10251
-#
 
 def accuracy_gainloss(y_true, y_pred):
     gain_test = K.cast(K.greater(y_true, K.constant(0.5)), K.floatx())
