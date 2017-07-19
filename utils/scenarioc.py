@@ -13,7 +13,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 from utils import paths_helper as paths
 from utils import vectorized_funs
-from utils import kerasutil as kutils
 from utils import scenarioa
 
 from sklearn.metrics import mean_squared_error
