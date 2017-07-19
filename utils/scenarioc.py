@@ -197,7 +197,7 @@ def calc_features(raw_df, verbose=True):
 	result_df = pd.DataFrame()
 
 	result_df["Close"] = raw_df["Close"]
-	result_df["RSI_60"] = vectorized_funs.rsiFunc(raw_df["Close"], 60)
+	result_df["RSI_60"] = vectorized_funs.rsiFunc(raw_df["Close"], 60) / 100.0
 	cmf, dmf = vectorized_funs.calc_chaikin_money_flow(raw_df, window=21)
 	result_df["CHAIKIN_MFLOW_21"] = cmf
 
