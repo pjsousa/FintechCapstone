@@ -33,7 +33,6 @@ $ ./capstonecli --help
   --setup               Create directory structure.
   --dump-config DUMP_CONFIG
                         Create dump configuration file.
-  --config CONFIG       Configuration file to use.
   --microtlist          Only use 3 tickers
   --fetch               Execute a fetch session.
   --fengineer           Execute a fengineer session.
