@@ -1,12 +1,20 @@
 #!/bin/bash
 
+
+
+
+
 ## First we'll run a model that will create the encoding files in our system.
 ## The encodings filenames will not have the modelname which both makes it fine to use in the 
 ## other model further down this script, but also is important to note if we ran this same encoding dimensions with 
 ## a smaller subsample size, since some other images migh be already on disk.
+
+###./capstonecli --setup
+
 ./capstonecli --name DummyModelToCreateEncodingsInOurFileSystem --scenario scenarioc --fetch --fetch
 ./capstonecli --name DummyModelToCreateEncodingsInOurFileSystem --scenario scenarioc --fetch --fengineer
 
+## This will not really encode all the data
 ./capstonecli --name DummyModelToCreateEncodingsInOurFileSystem --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 0
 ./capstonecli --name DummyModelToCreateEncodingsInOurFileSystem --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 1
 ./capstonecli --name DummyModelToCreateEncodingsInOurFileSystem --scenario scenarioc --subsample 1.5062 --size 40 --bins 100 --fencode 2
